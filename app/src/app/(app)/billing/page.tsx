@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BillingButton } from "@/components/billing-buttons";
+import { UsdcPay } from "@/components/usdc-pay";
 import { PageHeader } from "@/components/page-header";
 import { ensureReferralCode } from "@/lib/auth/referral";
 import { getUser } from "@/lib/auth/session";
@@ -63,9 +64,10 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
           <BillingButton endpoint="/api/billing/portal" label="Manage subscription" />
         </div>
       )}
+      <UsdcPay />
       <section className="mt-8 rounded-xl border bg-card p-5">
         <h2 className="font-display text-lg font-semibold">Invite friends</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Share your link. Sign-ups through it are recorded against your account.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Share your link. When someone you invite becomes a paying customer, you get 30 days of Pro (up to 12 rewards).</p>
         <p className="mt-2 break-all font-mono text-xs">/login?ref={referralCode}</p>
       </section>
     </>

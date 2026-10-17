@@ -15,6 +15,10 @@ export const users = pgTable("users", {
   referralCode: text("referral_code").unique(),
   /** Referral code of whoever invited this user. */
   referredBy: text("referred_by"),
+  /** Paid plan bought with USDC runs until this time (null = managed by Stripe or free). */
+  planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
+  /** Pro access earned through referrals runs until this time. */
+  bonusProUntil: timestamp("bonus_pro_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -86,3 +90,32 @@ export const decisions = pgTable("decisions", {
 
 export type Agent = typeof agents.$inferSelect;
 export type Decision = typeof decisions.$inferSelect;
+
+/** One reward per referred user, granted when they first become a paying customer. */
+export const referralRewards = pgTable("referral_rewards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  referrerId: uuid("referrer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  referredUserId: uuid("referred_user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  daysGranted: integer("days_granted").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** USDC subscription payments. `reference` is a unique account key the payer must include so the transfer can be found on-chain. */
+export const usdcPayments = pgTable("usdc_payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  plan: text("plan", { enum: ["pro", "teams"] }).notNull(),
+  amountUsdc: doublePrecision("amount_usdc").notNull(),
+  reference: text("reference").notNull().unique(),
+  signature: text("signature").unique(),
+  status: text("status", { enum: ["pending", "paid", "expired"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
