@@ -39,7 +39,7 @@ function extractSymbols(query: string): string[] {
 // ---------------------------------------------------------------------------
 
 export async function runMarketMindAnalysis(query: string): Promise<{ analysis: AskResponse; source: string }> {
-  if (!hasLlmKey()) throw new Error("LLM not configured (set OPENAI_BASE_URL / OPENAI_MODEL / OPENAI_API_KEY)");
+  if (!hasLlmKey()) throw new Error("LLM not configured (set ANTHROPIC_API_KEY, or OPENAI_BASE_URL / OPENAI_MODEL / OPENAI_API_KEY)");
   const ctx = await gatherContext(query, extractSymbols(query));
   const { analysis, source } = await runMarketMindLLM(ctx);
   return { analysis, source };

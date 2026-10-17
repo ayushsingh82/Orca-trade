@@ -11,12 +11,18 @@ const OAI_BASE_URL = process.env.OPENAI_BASE_URL ?? process.env.AI_BASE_URL ?? "
 const OAI_MODEL = process.env.OPENAI_MODEL ?? process.env.AI_MODEL ?? "gpt-4o-mini";
 const OAI_API_KEY = process.env.OPENAI_API_KEY ?? process.env.AI_API_KEY ?? "local";
 
+// Provider order: Anthropic Claude if ANTHROPIC_API_KEY is set, else the OpenAI-compatible endpoint.
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5";
+const anthropicEnabled = () => ANTHROPIC_API_KEY !== "";
+const modelName = () => (anthropicEnabled() ? ANTHROPIC_MODEL : OAI_MODEL);
+
 export function hasLlmKey(): boolean {
-  return OAI_BASE_URL !== "";
+  return anthropicEnabled() || OAI_BASE_URL !== "";
 }
 
 export function llmProviderLabel(): string {
-  return `vLLM · ${OAI_MODEL}`;
+  return `${anthropicEnabled() ? "Anthropic" : "OpenAI-compatible"} · ${modelName()}`;
 }
 
 const SYSTEM_PROMPT = `You are Orca's intelligence engine, a crypto market analyst.
@@ -79,28 +85,57 @@ function buildGroundingBlock(ctx: LlmContext): string {
   ].join("\n");
 }
 
-// Low-level chat call against the vLLM endpoint. Returns raw assistant text.
-async function chat(messages: { role: string; content: string }[], maxTokens: number): Promise<{ text: string; usage: { prompt_tokens?: number; completion_tokens?: number } }> {
-  const ctrl = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 30_000);
-  let res: Response;
-  try {
-    res = await fetch(`${OAI_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${OAI_API_KEY}` },
-      body: JSON.stringify({ model: OAI_MODEL, temperature: 0.4, max_tokens: maxTokens, messages }),
-      signal: ctrl.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-  if (!res.ok) throw new Error(`vLLM ${res.status}: ${(await res.text()).slice(0, 120)}`);
-  const json = (await res.json()) as {
+type ChatMessage = { role: string; content: string };
+type ChatResult = { text: string; usage: { prompt_tokens?: number; completion_tokens?: number } };
+
+async function postJson<T>(url: string, headers: Record<string, string>, body: unknown, label: string): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!res.ok) throw new Error(`${label} ${res.status}: ${(await res.text()).slice(0, 120)}`);
+  return (await res.json()) as T;
+}
+
+// Anthropic Messages API: the system prompt is a top-level field, not a message.
+async function chatAnthropic(messages: ChatMessage[], maxTokens: number): Promise<ChatResult> {
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const json = await postJson<{
+    content?: { type: string; text?: string }[];
+    usage?: { input_tokens?: number; output_tokens?: number };
+  }>(
+    "https://api.anthropic.com/v1/messages",
+    { "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    {
+      model: ANTHROPIC_MODEL,
+      max_tokens: maxTokens,
+      temperature: 0.4,
+      system,
+      messages: messages.filter((m) => m.role !== "system"),
+    },
+    "Anthropic",
+  );
+  const text = (json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
+  return { text, usage: { prompt_tokens: json.usage?.input_tokens, completion_tokens: json.usage?.output_tokens } };
+}
+
+async function chatOpenAI(messages: ChatMessage[], maxTokens: number): Promise<ChatResult> {
+  const json = await postJson<{
     choices?: { message?: { content?: string } }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number };
-  };
+  }>(
+    `${OAI_BASE_URL}/chat/completions`,
+    { Authorization: `Bearer ${OAI_API_KEY}` },
+    { model: OAI_MODEL, temperature: 0.4, max_tokens: maxTokens, messages },
+    "LLM",
+  );
   return { text: json.choices?.[0]?.message?.content ?? "", usage: json.usage ?? {} };
 }
+
+const chat = (messages: ChatMessage[], maxTokens: number) =>
+  anthropicEnabled() ? chatAnthropic(messages, maxTokens) : chatOpenAI(messages, maxTokens);
 
 export async function runMarketMindLLM(ctx: LlmContext): Promise<LlmResult> {
   const grounding = buildGroundingBlock(ctx);
@@ -115,7 +150,7 @@ export async function runMarketMindLLM(ctx: LlmContext): Promise<LlmResult> {
   const analysis = coerceAnalysis(parsed, ctx);
   return {
     analysis,
-    source: `vLLM/${OAI_MODEL} (grounded)`,
+    source: `${modelName()} (grounded)`,
     usage: {
       inputTokens: usage.prompt_tokens ?? 0,
       outputTokens: usage.completion_tokens ?? 0,
@@ -141,7 +176,7 @@ export async function generateBrief(ctx: LlmContext): Promise<{ text: string; li
     );
     const trimmed = text.trim();
     if (!trimmed) return { text: "", live: false, source: "" };
-    return { text: trimmed, live: true, source: `vLLM/${OAI_MODEL} (brief)` };
+    return { text: trimmed, live: true, source: `${modelName()} (brief)` };
   } catch {
     return { text: "", live: false, source: "" };
   }
