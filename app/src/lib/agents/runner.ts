@@ -4,6 +4,7 @@ import { agents, decisions, users, type Agent, type Decision } from "@/db/schema
 import { sendAlert } from "@/lib/alerts";
 import { GLOBAL_KILL, PILOT_MAX_TRADE_USD } from "@/lib/exec/config";
 import { paperFill, paperPortfolio } from "@/lib/exec/paper";
+import { resolveReferencePrice } from "@/lib/exec/reference";
 import { readPortfolio } from "@/lib/exec/portfolio";
 import { executeProposal } from "@/lib/exec/router";
 import { loadAgentKeypair } from "@/lib/exec/signer";
@@ -55,7 +56,9 @@ const priceMap = (signals: { asset: string; price: number }[]) =>
 
 type Outcome = Pick<Decision, "status" | "executedUsd" | "txSignature" | "error" | "fillUnits" | "fillPrice">;
 
-async function carryOut(agent: Agent, proposal: Proposal, price: number): Promise<Outcome> {
+async function carryOut(agent: Agent, proposal: Proposal, primaryPrice: number): Promise<Outcome> {
+  // Cross-check the SoSoValue price against CoinGecko. Live agents require the second source to be up.
+  const price = await resolveReferencePrice(proposal.asset, primaryPrice, { requireSecond: !agent.paper });
   if (agent.paper) {
     const fill = await paperFill(proposal, price);
     return { status: "paper", executedUsd: proposal.sizeUsd, txSignature: null, error: null, fillUnits: fill.units, fillPrice: fill.price };
