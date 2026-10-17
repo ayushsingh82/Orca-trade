@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import { SourceBadge } from "@/components/source-badge";
+import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { buildSignals } from "@/lib/signals";
 import { cn } from "@/lib/utils";
@@ -12,17 +15,23 @@ const DIRECTION_STYLE = {
 } as const;
 
 export default async function DashboardPage() {
-  const { signals, source } = await buildSignals();
+  let data;
+  try {
+    data = await buildSignals();
+  } catch (e) {
+    return <ErrorCard title="Could not load live signals" message={e instanceof Error ? e.message : "Unknown error"} />;
+  }
+  const { signals, source } = data;
   return (
     <>
       <PageHeader
         title="Opportunities"
         description="Ranked setups with conviction, evidence and contradictions."
       />
-      <p className="-mt-5 mb-6 font-mono text-xs text-muted-foreground">source: {source}</p>
+      <SourceBadge source={source} className="-mt-4 mb-6" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {signals.map((s) => (
-          <article key={s.id} className="rounded-xl border bg-card p-5">
+          <Link key={s.id} href={`/signals/${s.asset}`} className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold">{s.asset}</h2>
               <span className={cn("text-xs font-medium uppercase", DIRECTION_STYLE[s.direction])}>
@@ -50,7 +59,7 @@ export default async function DashboardPage() {
                 {s.contradictions[0].title}
               </p>
             )}
-          </article>
+          </Link>
         ))}
       </div>
     </>

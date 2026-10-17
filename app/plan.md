@@ -8,8 +8,9 @@ Product plan lives one level up: `../IDEA.md` (what) and `../PLAN.md` (milestone
 2. **Port, don't fork.** MarketMind code is copied into `src/lib/intel/` as a frozen engine with minimal edits (env-config only). Orca-specific logic lives *outside* it (`src/lib/signals.ts`, later `agents/`, `risk/`, `exec/`). This keeps the engine upgradable and the new work obvious.
 3. **LLM proposes, deterministic code disposes.** No execution path may depend on LLM output without passing the Risk Engine.
 4. **Honest provenance.** Every payload carries a `source` string (live vs. mock); the UI shows it.
-5. **UI = BestUI theme exactly** (`src/app/globals.css` tokens: bg `#151515`, card `#1a1a1a`, muted `#1e1e1e`, border white/8%, violet accent; Geist + Bricolage Grotesque; dark-only).
-6. **Secrets only via env** (`.env.local`, gitignored). Never hardcoded.
+5. **Real data only.** No mock fallbacks and no templated theses; if a source is down we show an error, or the last real response.
+6. **UI = BestUI theme exactly** (`src/app/globals.css` tokens: bg `#151515`, card `#1a1a1a`, muted `#1e1e1e`, border white/8%, violet accent; Geist + Bricolage Grotesque; dark-only).
+7. **Secrets only via env** (`.env.local`, gitignored). Never hardcoded.
 
 ## How we take inspiration from MarketMind
 
@@ -31,7 +32,7 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 | Milestone | State |
 | --- | --- |
 | M0 Scaffold + BestUI theme | Done |
-| M1 Intelligence layer | **In progress** — engine ported, `OrcaSignal` + `/api/signals` + live Opportunities page working. Remaining: Ask Orca, news/evidence drill-down, signal detail page, `source` badge in UI |
+| M1 Intelligence layer | **Nearly done** — real data only (no mock), shared rate limiter, `OrcaSignal` + `/api/signals`, Opportunities, signal detail, Ask Orca, source badge. Remaining: LLM endpoint for Ask Orca, Anthropic provider |
 | M0.5 Accounts | Next |
 | M2 Agents (observe/paper) | Not started |
 | M3 Risk Engine + policy | Not started |
