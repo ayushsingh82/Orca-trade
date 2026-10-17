@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, LayoutDashboard, MessageSquare, Wallet } from "lucide-react";
+import { Bot, CreditCard, LayoutDashboard, MessageSquare, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
 import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/ask", label: "Ask Orca", icon: MessageSquare },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/portfolio", label: "Portfolio", icon: Wallet },
+  { href: "/billing", label: "Billing", icon: CreditCard },
 ];
 
 export function AppSidebar() {

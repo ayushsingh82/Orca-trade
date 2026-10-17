@@ -1,6 +1,5 @@
 import type { Proposal } from "@/lib/risk/types";
-import { getQuote } from "./jupiter";
-import { TOKENS, USDC } from "./mints";
+import { quoteProposal } from "./pricing";
 
 export type PaperFill = { units: number; price: number };
 export type PaperPortfolio = { totalUsd: number; positionsUsd: Record<string, number>; cashUsd: number; pnlUsd: number; units: Record<string, number> };
@@ -10,31 +9,8 @@ export type PaperPortfolio = { totalUsd: number; positionsUsd: Record<string, nu
  * no funds. `units` is positive for buys and negative for sells.
  */
 export async function paperFill(proposal: Proposal, usdPerUnit: number): Promise<PaperFill> {
-  const token = TOKENS[proposal.asset.toUpperCase()];
-  if (!token) throw new Error(`${proposal.asset} is not tradable via Orca`);
-  if (!(usdPerUnit > 0)) throw new Error("no live price for sizing");
-
-  if (proposal.side === "buy") {
-    const quote = await getQuote({
-      inputMint: USDC.mint,
-      outputMint: token.mint,
-      amount: BigInt(Math.floor(proposal.sizeUsd * 10 ** USDC.decimals)),
-      slippageBps: proposal.maxSlippageBps,
-    });
-    const units = Number(quote.outAmount) / 10 ** token.decimals;
-    if (!(units > 0)) throw new Error("quote returned no output");
-    return { units, price: proposal.sizeUsd / units };
-  }
-  const sellUnits = proposal.sizeUsd / usdPerUnit;
-  const quote = await getQuote({
-    inputMint: token.mint,
-    outputMint: USDC.mint,
-    amount: BigInt(Math.floor(sellUnits * 10 ** token.decimals)),
-    slippageBps: proposal.maxSlippageBps,
-  });
-  const usdOut = Number(quote.outAmount) / 10 ** USDC.decimals;
-  if (!(usdOut > 0)) throw new Error("quote returned no output");
-  return { units: -sellUnits, price: usdOut / sellUnits };
+  const priced = await quoteProposal(proposal, usdPerUnit);
+  return { units: proposal.side === "buy" ? priced.units : -priced.units, price: priced.impliedPrice };
 }
 
 type Fill = { proposal: { asset: string; side: "buy" | "sell"; sizeUsd: number } | null; status: string; fillUnits: number | null; fillPrice: number | null };

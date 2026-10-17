@@ -1,37 +1,22 @@
 import { Connection, VersionedTransaction } from "@solana/web3.js";
 import type { Keypair } from "@solana/web3.js";
 import type { Proposal } from "@/lib/risk/types";
-import { EXECUTION_ENABLED, RPC_URL } from "./config";
-import { buildSwapTransaction, getQuote } from "./jupiter";
-import { TOKENS, USDC } from "./mints";
+import { EXECUTION_ENABLED, JITO_TIP_LAMPORTS, RPC_URL } from "./config";
+import { sendViaJito } from "./jito";
+import { buildSwapTransaction } from "./jupiter";
+import { quoteProposal } from "./pricing";
 
 export type ExecResult =
   | { kind: "executed"; signature: string; quotedOutAmount: string }
   | { kind: "simulated"; quotedOutAmount: string; unitsConsumed: number | null; error: string | null };
 
 /**
- * quote -> build -> sign -> simulate -> (send if enabled). Simulation runs against real
+ * quote -> price-check -> build -> sign -> simulate -> (send if enabled). Simulation runs against real
  * mainnet state, so an unfunded agent wallet fails honestly rather than "passing".
  * Sending requires EXECUTION_ENABLED=1.
  */
 export async function executeProposal(proposal: Proposal, signer: Keypair, usdPerUnit: number): Promise<ExecResult> {
-  const token = TOKENS[proposal.asset.toUpperCase()];
-  if (!token) throw new Error(`${proposal.asset} is not tradable on Solana via Orca`);
-  if (!(usdPerUnit > 0)) throw new Error("no live price for sizing");
-
-  const buy = proposal.side === "buy";
-  const input = buy ? USDC : token;
-  const output = buy ? token : USDC;
-  const inUnits = buy ? proposal.sizeUsd : proposal.sizeUsd / usdPerUnit;
-  const amount = BigInt(Math.floor(inUnits * 10 ** input.decimals));
-  if (amount <= BigInt(0)) throw new Error("trade size rounds to zero");
-
-  const quote = await getQuote({
-    inputMint: input.mint,
-    outputMint: output.mint,
-    amount,
-    slippageBps: proposal.maxSlippageBps,
-  });
+  const { quote } = await quoteProposal(proposal, usdPerUnit);
   const tx = VersionedTransaction.deserialize(Buffer.from(await buildSwapTransaction(quote, signer.publicKey.toBase58()), "base64"));
   tx.sign([signer]);
 
@@ -46,7 +31,8 @@ export async function executeProposal(proposal: Proposal, signer: Keypair, usdPe
     };
   }
 
-  const signature = await connection.sendRawTransaction(tx.serialize(), { maxRetries: 3 });
+  // With a Jito tip configured, land the swap as a private bundle; otherwise use the normal RPC path.
+  const signature = JITO_TIP_LAMPORTS > 0 ? await sendViaJito(tx) : await connection.sendRawTransaction(tx.serialize(), { maxRetries: 3 });
   const latest = await connection.getLatestBlockhash();
   const conf = await connection.confirmTransaction({ signature, ...latest }, "confirmed");
   if (conf.value.err) throw new Error(`transaction failed on-chain: ${JSON.stringify(conf.value.err)}`);
