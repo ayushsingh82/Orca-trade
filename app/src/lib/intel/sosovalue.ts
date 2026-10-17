@@ -204,14 +204,15 @@ export async function getMarketSnapshot(symbol?: string): Promise<{ data: Market
 // burning the monthly quota on guaranteed 403s, short-circuit unless explicitly
 // enabled. Callers already fall back to mock series on throw.
 export async function getKlines(currencyIdOrSymbol: string, interval = "1m", limit = 240) {
-  if (!KLINES_LIVE) {
-    throw new Error("klines disabled on Demo plan (set SOSO_KLINES_LIVE=1 with a whitelisted key)");
+  // Daily candles work on the Demo plan; intraday needs a whitelisted key (SOSO_KLINES_LIVE=1).
+  if (interval !== "1d" && !KLINES_LIVE) {
+    throw new Error("intraday klines disabled on Demo plan (set SOSO_KLINES_LIVE=1 with a whitelisted key)");
   }
   const map = await getCurrencyIdMap();
   const id = map.get(currencyIdOrSymbol.toLowerCase()) ?? currencyIdOrSymbol;
   const raw = await cachedGet<unknown[]>(
     `/currencies/${id}/klines?interval=${encodeURIComponent(interval)}&limit=${limit}`,
-    180_000,
+    interval === "1d" ? 6 * 3_600_000 : 180_000,
   );
   return { data: normalizeKlines(raw ?? []) };
 }

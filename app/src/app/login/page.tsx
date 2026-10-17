@@ -19,6 +19,9 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Referral code from /login?ref=CODE, read at submit time (no Suspense needed).
+  const refCode = () => new URLSearchParams(window.location.search).get("ref") ?? undefined;
+
   async function post(url: string, body: unknown) {
     const res = await fetch(url, {
       method: "POST",
@@ -47,7 +50,7 @@ export default function LoginPage() {
   function onEmail(e: FormEvent) {
     e.preventDefault();
     run(async () => {
-      await post(mode === "login" ? "/api/auth/login" : "/api/auth/signup", { email, password });
+      await post(mode === "login" ? "/api/auth/login" : "/api/auth/signup", { email, password, ref: refCode() });
     });
   }
 
@@ -59,7 +62,7 @@ export default function LoginPage() {
       const wallet = publicKey.toString();
       const { message, challenge } = await post("/api/auth/nonce", { wallet });
       const { signature } = await provider.signMessage(new TextEncoder().encode(message), "utf8");
-      await post("/api/auth/wallet", { wallet, signature: bs58.encode(signature), challenge });
+      await post("/api/auth/wallet", { wallet, signature: bs58.encode(signature), challenge, ref: refCode() });
     });
   }
 

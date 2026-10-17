@@ -3,6 +3,7 @@ import { jwtVerify, SignJWT } from "jose";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, type User } from "@/db/schema";
+import { effectivePlan } from "@/lib/billing/effective-plan";
 
 const COOKIE = "orca_session";
 const SESSION_TTL_S = 60 * 60 * 24 * 14;
@@ -52,5 +53,6 @@ export async function getUser(): Promise<User | null> {
   const payload = await verifyToken<{ sub?: string }>(token);
   if (!payload?.sub) return null;
   const [user] = await db().select().from(users).where(eq(users.id, payload.sub)).limit(1);
-  return user ?? null;
+  // Gate on what the user is entitled to right now (USDC expiry, referral bonus), not just the stored plan.
+  return user ? { ...user, plan: effectivePlan(user) } : null;
 }

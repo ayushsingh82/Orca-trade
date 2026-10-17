@@ -2,7 +2,8 @@
 // Evolved from MarketMind's `marketmind.autofund.signal/v1` handoff payload.
 import { buildLiveNewsImpacts, detectContradictions } from "./intel/marketmind";
 import { buildMarketMindIndex } from "./intel/ssi";
-import { clamp } from "./intel/analytics";
+import { getKlines } from "./intel/sosovalue";
+import { convictionFrom, scoreSignal } from "./scoring";
 import type { Contradiction } from "./intel/types";
 
 export type OrcaSignal = {
@@ -35,7 +36,28 @@ export async function buildSignals(): Promise<SignalsResult> {
     detectContradictions(),
   ]);
 
-  const signals = index.constituents.map((c): OrcaSignal => {
+  // Daily closes for the 7d/14d trend (cached 6h). Missing data means no signal for that asset.
+  const closes = new Map<string, number[]>();
+  await Promise.all(
+    index.constituents.map(async (c) => {
+      try {
+        const { data } = await getKlines(c.symbol, "1d", 30);
+        closes.set(c.symbol, data.sort((a, b) => a.t - b.t).map((k) => k.c));
+      } catch {
+        /* handled below: asset is skipped */
+      }
+    }),
+  );
+
+  const signals = index.constituents.flatMap((c): OrcaSignal[] => {
+    const series = closes.get(c.symbol);
+    // Daily candle series ends with today's partial candle; measure trend from the last full closes + live price.
+    const at = (daysAgo: number) => series && series.length > daysAgo ? series[series.length - 1 - daysAgo] : null;
+    const ref7 = at(7);
+    const ref14 = at(14);
+    const return7dPct = ref7 ? (c.price / ref7 - 1) * 100 : null;
+    const return14dPct = ref14 ? (c.price / ref14 - 1) * 100 : null;
+
     const related = news.items.filter((n) => n.symbols.includes(c.symbol));
     const bull = related.filter((n) => n.sentiment === "bullish");
     const bear = related.filter((n) => n.sentiment === "bearish");
@@ -44,9 +66,9 @@ export async function buildSignals(): Promise<SignalsResult> {
         related.length
       : 0;
 
-    // Blend price momentum and news bias into one directional score (-100..100).
-    const score = clamp(c.change24h * 8 + newsBias * 0.6, -100, 100);
-    const direction = score > 8 ? "long" : score < -8 ? "short" : "neutral";
+    const scored = scoreSignal({ return7dPct, return14dPct, newsBias });
+    if (!scored) return [];
+    const { score, direction } = scored;
 
     const touching = contra.items.filter(
       (x) => x.title.includes(c.symbol) || x.signalA.value.includes(c.symbol) || x.signalB.value.includes(c.symbol),
@@ -54,11 +76,9 @@ export async function buildSignals(): Promise<SignalsResult> {
     const worst = touching.reduce<number>((m, x) => Math.max(m, SEVERITY_RANK[x.severity]), 0);
     const riskFlag = (["none", "low", "medium", "high"] as const)[worst];
 
-    // Contradictions erode conviction.
-    const base = Math.abs(score) + (direction === "neutral" ? 0 : related.length * 4);
-    const conviction = Math.round(clamp(base - worst * 6, 5, 95));
+    const conviction = convictionFrom({ score, direction, headlines: related.length, worstSeverity: worst });
 
-    return {
+    return [{
       id: `sig_${c.symbol.toLowerCase()}`,
       asset: c.symbol,
       direction,
@@ -66,7 +86,7 @@ export async function buildSignals(): Promise<SignalsResult> {
       price: c.price,
       change24h: c.change24h,
       rationale: [
-        `${c.change24h >= 0 ? "+" : ""}${c.change24h}% over 24h`,
+        `${(return7dPct as number) >= 0 ? "+" : ""}${(return7dPct as number).toFixed(1)}% over 7d, ${(return14dPct as number) >= 0 ? "+" : ""}${(return14dPct as number).toFixed(1)}% over 14d (${c.change24h >= 0 ? "+" : ""}${c.change24h}% 24h)`,
         related.length
           ? `${related.length} related headline${related.length > 1 ? "s" : ""} (${bull.length} bullish, ${bear.length} bearish)`
           : "No related headlines in window",
@@ -74,7 +94,7 @@ export async function buildSignals(): Promise<SignalsResult> {
       citations: related.slice(0, 3).map((n) => ({ id: n.id, title: n.title, source: n.source })),
       contradictions: touching,
       riskFlag,
-    };
+    }];
   });
 
   signals.sort((a, b) => b.conviction - a.conviction);

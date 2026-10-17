@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { grantReferralReward } from "@/lib/billing/rewards";
 import { ACTIVE_STATUSES, planForPrice, stripe } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
@@ -11,10 +12,12 @@ export const runtime = "nodejs";
 async function applySubscription(sub: Stripe.Subscription) {
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
   const plan = ACTIVE_STATUSES.has(sub.status) ? planForPrice(sub.items.data[0]?.price.id) : null;
-  await db()
+  const [updated] = await db()
     .update(users)
     .set({ plan: plan ?? "free", stripeSubscriptionId: plan ? sub.id : null })
-    .where(eq(users.stripeCustomerId, customerId));
+    .where(eq(users.stripeCustomerId, customerId))
+    .returning({ id: users.id });
+  if (plan && updated) await grantReferralReward(updated.id);
 }
 
 export async function POST(req: NextRequest) {

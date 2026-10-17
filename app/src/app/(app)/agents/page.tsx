@@ -3,6 +3,7 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, decisions } from "@/db/schema";
 import { ActionButton } from "@/components/agents/action-button";
+import { ToggleButton } from "@/components/agents/toggle-button";
 import { CreateAgentForm } from "@/components/agents/create-agent-form";
 import { FundAgent } from "@/components/agents/fund-agent";
 import { SolanaProviders } from "@/components/agents/wallet-provider";
@@ -60,7 +61,12 @@ export default async function AgentsPage() {
                     {a.strategy.replace("_", " ")} · {a.paper ? "paper" : "live"} · {a.policy.mode} · ${a.policy.maxTradeUsd}/trade · ${a.policy.maxDailyUsd}/day
                   </p>
                 </div>
-                <ActionButton url={`/api/agents/${a.id}/run`} label="Run now" busyLabel="Running…" />
+                <div className="flex flex-wrap gap-2">
+                  {a.paper && (
+                    <ToggleButton url={`/api/agents/${a.id}/list`} field="listed" on={a.listed} labelOn="Listed on leaderboard · unlist" labelOff="List on leaderboard" />
+                  )}
+                  <ActionButton url={`/api/agents/${a.id}/run`} label="Run now" busyLabel="Running…" />
+                </div>
               </div>
               {!a.paper && (
                 <>
@@ -80,6 +86,7 @@ export default async function AgentsPage() {
                         {d.fillPrice ? ` @ $${d.fillPrice.toFixed(2)}` : ""}
                       </span>
                       <span className="font-mono text-xs text-muted-foreground">{d.createdAt.toISOString().slice(0, 16).replace("T", " ")}</span>
+                      <ToggleButton url={`/api/decisions/${d.id}/share`} field="shared" on={d.shared} labelOn="Shared · unshare" labelOff="Share" />
                       {d.status === "pending" && <ActionButton url={`/api/decisions/${d.id}/approve`} label="Approve" busyLabel="Executing…" />}
                     </div>
                     <p className="text-xs text-muted-foreground">{d.rationale[0]}</p>
