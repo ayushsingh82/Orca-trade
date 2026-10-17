@@ -26,13 +26,13 @@ Take the repo as a starting point: scaffold Orca fresh and port the `lib/` files
  Prices ────┘   (from MarketMind)   (LLM propose) │        │
                                                   │        ▼
                                                   └─► Execution Router ─► Smart wallet
-                                                       quote·simulate·submit  (session key)
+                                                       quote·simulate·submit  (scoped signer)
 ```
 
 - **Signal Engine**: MarketMind's engine, output = `OrcaSignal` (asset, direction, conviction 0–100, contradictions[], citations[], data snapshot id).
 - **Agent Runtime**: per-agent loop on a schedule. Input: signals + portfolio + policy. LLM output: a *proposal* in strict JSON. Nothing executes here.
 - **Risk Engine**: pure TypeScript, no LLM. Checks universe, per-trade/daily caps, max slippage, position concentration, contradiction severity, kill switch. Returns pass/fail with reasons.
-- **Execution Router**: quote (DEX aggregator) → simulate → submit with session key → confirm → write result to the Decision Record.
+- **Execution Router**: quote (DEX aggregator) → simulate → submit with scoped signer → confirm → write result to the Decision Record.
 - **Storage**: Postgres (agents, policies, decisions, orders, snapshots).
 
 ## 3. Tech decisions (proposed defaults)
@@ -43,10 +43,10 @@ Take the repo as a starting point: scaffold Orca fresh and port the `lib/` files
 | DB | Postgres + Drizzle (Neon/Supabase) | Decision Records need relational history |
 | Scheduler | Vercel Cron to start; later a worker (Inngest/BullMQ) | Agent loops |
 | LLM | Claude via Anthropic SDK (prompt caching), JSON-schema output | Better grounding; MarketMind already has the provider fallback shape |
-| Chain | **Base** (testnet: Base Sepolia first) | Cheap, deep liquidity, your other projects (FloatPay) already target it |
-| Wallet | Smart account (ERC-4337/7579) with session keys — e.g. ZeroDev/Safe modules via permissionless.js | Enforceable scoped agent authority |
-| Swaps | 0x or 1inch/Uniswap routing API | Quote + calldata; simulate before send |
-| Price feed for risk | Pyth/Chainlink read | Sanity-check quotes vs. oracle |
+| Chain | **Solana** (devnet first) | Final decision: fast, cheap, deep spot liquidity |
+| Wallet | Solana wallet-adapter (Phantom etc.) for the user; agent acts through a limited-authority signer (e.g. a smart-account program with spending limits such as Squads, or a managed delegated signer with policies). Pick at start of M4 | Enforceable scoped agent authority |
+| Swaps | Jupiter swap API | Quote + transaction; simulate before send |
+| Price feed for risk | Pyth | Sanity-check quotes vs. oracle |
 
 ## 4. Milestones
 
@@ -82,7 +82,7 @@ Each milestone ends in something demoable. Do them in order.
 - Wallet connect + smart account creation; session-key grant UI (scope = policy), revoke button.
 - Execution Router: quote → simulate → send → confirm; handle failure, reverts, partial state.
 - `propose` mode: pending-approval queue (user taps approve).
-- **Done when:** on Base Sepolia, an agent proposal → user approves → real tx → Decision Record has the tx hash.
+- **Done when:** on Solana devnet, an agent proposal → user approves → real tx → Decision Record has the tx hash.
 
 ### M5 — Autonomous mode + portfolio (3 days)
 - `autonomous` mode within session-key limits; auto-downgrade to `propose` on high-severity contradiction.
@@ -109,7 +109,7 @@ Design for paying users from day one, but switch billing on only after M5. That 
 3. **Explore** → opportunity feed, Ask Orca (daily limit).
 4. **Create first agent** → pick a template, set a policy, run in `observe`/paper mode.
 5. **Trust** → review the Decision log and paper PnL for a few days.
-6. **Go live** → connect a smart wallet, grant a session key, switch to `propose` then `autonomous`. Paid features start here.
+6. **Go live** → connect a Solana wallet, grant the agent a limited-authority signer, switch to `propose` then `autonomous`. Paid features start here.
 
 ### Tiers (placeholder prices, to be validated with users)
 | | Free | Pro (~$29/mo) | Teams (~$199/mo) |
@@ -125,7 +125,7 @@ Pricing model: **subscription with usage caps**. Do not take a performance fee o
 
 ### Payments
 - **Cards**: Stripe Checkout + Billing portal (subscriptions, trials, invoices). Webhooks update the user's plan.
-- **Crypto**: pay in USDC on Base, which fits the audience. The same Base setup lets you reuse the FloatPay/USDC work, and an x402-style pay-per-call API is possible later for developers.
+- **Crypto**: pay in USDC on Solana, which fits the audience. An x402-style pay-per-call API is possible later for developers.
 - **Entitlements**: a single `plan` + `limits` table checked server-side by one `can(user, feature)` helper. Gate by feature, never by hardcoded UI checks.
 
 ### Added data model
@@ -143,14 +143,14 @@ Pricing model: **subscription with usage caps**. Do not take a performance fee o
 
 ## 5. Safety rules (non-negotiable)
 1. LLM output is a proposal only; the deterministic Risk Engine is the sole gate.
-2. Limits enforced in the session key, not just app code.
-3. Non-custodial; no private keys server-side beyond the revocable session key.
+2. Limits enforced by the agent's on-chain signer authority, not just app code.
+3. Non-custodial; no user private keys server-side; only the revocable, limited agent signer.
 4. Default mode `observe`; autonomous requires explicit opt-in per agent.
 5. Idempotent orders; every action logged to a Decision Record.
 6. Testnet until M5 passes.
 
 ## 6. Open decisions for you
-1. **Chain/venue**: Base + DEX aggregator (proposed), or trade on SoDEX (testnet, matches MarketMind data but less liquid/known)? Or Flare/other to match a hackathon?
+1. ~~Chain/venue~~ **Decided: Solana** (Jupiter for swaps).
 2. **Data**: do you have a SoSoValue API key, or build on mock first?
 3. **Submission target**: is this for a specific hackathon/deadline? That changes how much of M4–M6 we cut.
 4. **Name/design system**: reuse the MarketMind look or a new one?

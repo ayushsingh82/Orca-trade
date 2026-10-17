@@ -33,10 +33,10 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 | --- | --- |
 | M0 Scaffold + BestUI theme | Done |
 | M1 Intelligence layer | **Nearly done** — real data only (no mock), shared rate limiter, `OrcaSignal` + `/api/signals`, Opportunities, signal detail, Ask Orca, source badge. Remaining: LLM endpoint for Ask Orca, Anthropic provider |
-| M0.5 Accounts | Next |
-| M2 Agents (observe/paper) | Not started |
-| M3 Risk Engine + policy | Not started |
-| M4 Wallet + testnet execution | Not started |
+| M0.5 Accounts | **Code complete** — Solana wallet sign-in, email/password, Neon + Drizzle schema/migration, `consume()` daily limits on Ask. Needs `DATABASE_URL` + `AUTH_SECRET` to run end to end |
+| M2 Agents | **Built** — `agents`/`decisions` schema, momentum + narrative-rotation strategies, runner, Decision log UI. Paper PnL not built (execution is quote+simulate by default) |
+| M3 Risk Engine + policy | **Done** — pure `evaluate()`, `parseProposal()`, policy validation with hard ceilings, global + per-agent kill switch, 24 passing tests |
+| M4 Solana execution | **Built** — wallet detection + fund flow, per-agent encrypted signer, Jupiter quote/swap, simulate-then-send, human approval with Risk Engine re-check. Sending is OFF unless `EXECUTION_ENABLED=1` |
 | M5 Autonomous + portfolio | Not started |
 | M6–M8 Hardening, billing, growth | Not started |
 
@@ -50,3 +50,9 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 - Signal scoring in `src/lib/signals.ts` is a simple momentum + news-bias blend; a heuristic, to be refined and backtested before agents trade on it.
 - The SoSoValue key previously committed in MarketMind's public repo should be rotated; Orca reads it from `.env.local`.
 - Contradiction-to-asset matching is by symbol text match; revisit when contradictions get structured asset tags.
+
+## Design notes: M3 / M4
+- **Agent signer.** Each agent gets its own Solana keypair, encrypted at rest (AES-256-GCM, `AGENT_KEY_SECRET`). It only holds what the user sends it, so the user's exposure is the funded balance plus the Risk Engine limits. This is a simple stand-in for a smart-account spending-limit program (e.g. Squads); swap it in later for on-chain-enforced caps.
+- **Jupiter has no devnet liquidity.** Quotes and simulations run against real mainnet state. With `EXECUTION_ENABLED` unset, nothing is sent; an unfunded agent fails simulation honestly (`AccountNotFound`), it is never faked.
+- **Approval re-check.** Approving a pending decision re-runs the Risk Engine against fresh balances and spend before any swap.
+- **Free plan.** 1 agent, observe-only. Pro 5, Teams 25.

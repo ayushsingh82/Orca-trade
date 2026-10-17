@@ -25,13 +25,13 @@
 - Every decision emits a **Decision Record**: thesis, citations, confidence, contradictions, proposed order, risk checks passed/failed.
 
 ### Layer 3 — Execution (Act)
-- Non-custodial. The user's smart wallet grants the agent a **scoped session key**: allowed tokens, per-trade cap, daily cap, max slippage, expiry, revocable any time.
+- Non-custodial. On **Solana**, the user's wallet grants the agent a **limited-authority signer**: allowed tokens, per-trade cap, daily cap, max slippage, expiry, revocable any time.
 - Execution router: quote → simulate → risk check → submit → confirm → record.
 - Portfolio view: positions, PnL, and per-agent attribution.
 
 ## Differentiators
 1. **Evidence-gated execution** — no trade without a cited Decision Record; high-severity contradictions auto-downgrade `autonomous` to `propose`.
-2. **Enforced, not promised, limits** — caps live in the session key / wallet policy, not just in app code.
+2. **Enforced, not promised, limits** — caps live in the on-chain signer authority / wallet policy, not just in app code.
 3. **Auditable** — every trade replays: data snapshot → reasoning → order → tx hash.
 4. **Read-only fallback** — works as pure research desk with no wallet connected.
 
