@@ -10,6 +10,8 @@ export const users = pgTable("users", {
   plan: text("plan", { enum: ["free", "pro", "teams"] }).notNull().default("free"),
   /** Telegram chat id for alerts (optional). */
   telegramChatId: text("telegram_chat_id"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
