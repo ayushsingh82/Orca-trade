@@ -1,4 +1,3 @@
-import { buildContradictions, buildNewsImpacts } from "./mock";
 import {
   getEtfFlows,
   getKlines,
@@ -21,237 +20,68 @@ import {
 import { generateBrief, hasLlmKey, runMarketMindLLM, type LlmContext } from "./llm";
 import type { AskResponse, Contradiction, NewsImpact } from "./types";
 
-// MarketMind intelligence engine.
-// Goal: turn raw SoSoValue + SoDEX inputs into a structured, evidence-backed
-// reasoning object — never an order. The engine is read-only on purpose.
-
-type IntentTag =
-  | "down"
-  | "up"
-  | "narrative"
-  | "macro"
-  | "sector"
-  | "asset"
-  | "general";
-
-function classifyIntent(query: string): IntentTag[] {
-  const q = query.toLowerCase();
-  const tags: IntentTag[] = [];
-  if (/(down|fall|drop|crash|sell.?off|bearish)/.test(q)) tags.push("down");
-  if (/(up|rally|pump|moon|bull|surge)/.test(q)) tags.push("up");
-  if (/(ai|narrative|rotation|sector|trend)/.test(q)) tags.push("narrative");
-  if (/(macro|cpi|fed|fomc|rate|inflation|jobs)/.test(q)) tags.push("macro");
-  if (/(defi|l1|l2|memes?|stables?)/.test(q)) tags.push("sector");
-  if (/(btc|bitcoin|eth|ethereum|sol|solana)/.test(q)) tags.push("asset");
-  if (tags.length === 0) tags.push("general");
-  return tags;
-}
+// Orca intelligence engine (ported from MarketMind). Real data only: no mock
+// fallbacks, no templated theses. Anything unavailable throws or is omitted.
 
 function extractSymbols(query: string): string[] {
   const q = query.toUpperCase();
   const universe = [
     "BTC", "ETH", "SOL", "ARB", "OP", "AVAX", "ADA", "MATIC", "LINK",
     "DOGE", "PEPE", "WIF", "BONK", "FET", "RNDR", "TAO", "AGIX", "ONDO",
-    "MKR", "AAVE", "UNI", "LDO",
+    "MKR", "AAVE", "UNI", "LDO", "BNB", "XRP",
   ];
   return universe.filter((s) => q.includes(s));
 }
 
-function pickThesis(tags: IntentTag[], symbols: string[]): string {
-  const focus = symbols[0] ?? "the market";
-  if (tags.includes("down")) {
-    return `Recent ${focus} weakness is macro-led: rate-path uncertainty plus thinning stablecoin supply has reduced the marginal-buyer pool, while news flow has shifted from accumulation to caution.`;
-  }
-  if (tags.includes("up")) {
-    return `Recent ${focus} strength is flow-led, supported by ETF inflows, expanding sector breadth, and a softer macro backdrop. Continuation is plausible while funding stays neutral.`;
-  }
-  if (tags.includes("narrative")) {
-    return `The dominant narrative is AI-infrastructure rotation. Velocity is high, breadth is widening, and price proxies confirm — but macro overhangs cap the persistence score.`;
-  }
-  if (tags.includes("macro")) {
-    return `Macro is the swing factor. Pre-event positioning has tightened, derivatives are hedged into the print, and any surprise will determine whether the current bid persists or unwinds.`;
-  }
-  return `Cross-asset evidence currently leans risk-on with moderate macro overhang. Conviction comes from breadth, not single-name leadership.`;
-}
-
-function buildSuggestions(tags: IntentTag[]): string[] {
-  const out: string[] = [];
-  if (tags.includes("down")) {
-    out.push("Wait for the next macro event window to clear before increasing exposure.");
-    out.push("Prefer staggered entries; size off realized volatility, not headline tone.");
-  } else if (tags.includes("up")) {
-    out.push("Track funding rates — euphoria flips faster than spot signals.");
-    out.push("Set drawdown stops based on your watchlist's blended beta, not single-name vol.");
-  } else if (tags.includes("narrative")) {
-    out.push("Use the narrative-velocity score to time entries into the breadth, not the leader.");
-    out.push("Watch the contradiction list — narrative + flow disagreement is a tell.");
-  } else {
-    out.push("Sanity-check the thesis against the contradiction list before sizing.");
-    out.push("Re-read in 4 hours — narratives decay; refresh the inputs, not the conclusion.");
-  }
-  return out;
-}
-
 // ---------------------------------------------------------------------------
-// Ask Market — REAL LLM when ANTHROPIC_API_KEY is set, heuristic fallback otherwise.
+// Ask Orca: grounded LLM over live SoSoValue data. Throws if the LLM or the data
+// source is unavailable; there is no templated fallback.
 // ---------------------------------------------------------------------------
 
 export async function runMarketMindAnalysis(query: string): Promise<{ analysis: AskResponse; source: string }> {
-  const tags = classifyIntent(query);
-  const symbols = extractSymbols(query);
-
-  // Gather grounding context. Live where keys exist, mock otherwise. We always
-  // build a usable context object so the LLM (or the fallback) has something real.
-  const ctx = await gatherContext(query, symbols);
-
-  // 1) Real LLM path.
-  if (hasLlmKey()) {
-    try {
-      const { analysis, source } = await runMarketMindLLM(ctx);
-      return { analysis, source };
-    } catch (err) {
-      // Fall through to the heuristic with an honest source label.
-      const fallback = heuristicAnalysis(query, tags, symbols, ctx);
-      return {
-        analysis: fallback.analysis,
-        source: `heuristic (LLM error: ${(err as Error).message.slice(0, 70)})`,
-      };
-    }
-  }
-
-  // 2) Heuristic fallback (no LLM key).
-  return heuristicAnalysis(query, tags, symbols, ctx);
+  if (!hasLlmKey()) throw new Error("LLM not configured (set OPENAI_BASE_URL / OPENAI_MODEL / OPENAI_API_KEY)");
+  const ctx = await gatherContext(query, extractSymbols(query));
+  const { analysis, source } = await runMarketMindLLM(ctx);
+  return { analysis, source };
 }
 
-// Wave 3 AI Market Brief — a live tape note grounded in the same context.
-// Falls back to a deterministic one-liner if the model is unreachable.
-export async function runMarketMindBrief(): Promise<{ brief: string; live: boolean; source: string }> {
+export async function runMarketMindBrief(): Promise<{ brief: string; source: string }> {
+  if (!hasLlmKey()) throw new Error("LLM not configured");
   const ctx = await gatherContext("market overview right now", []);
   const { text, live, source } = await generateBrief(ctx);
-  if (live && text) return { brief: text, live: true, source };
-
-  // Deterministic fallback from the grounding data.
-  const up = ctx.sectors.filter((s) => s.change24h > 0).length;
-  const down = ctx.sectors.length - up;
-  const topNews = ctx.news[0]?.title ?? "no fresh headlines";
-  const breadth = ctx.sectors.length
-    ? `${up} up / ${down} down across sectors`
-    : "sector breadth unavailable";
-  return {
-    brief: `Tape read: ${breadth}. Lead headline — ${topNews}. Watch for cross-source disagreement between news tone and breadth before leaning either way.`,
-    live: false,
-    source: hasSosoKey() ? "heuristic tape brief (live data)" : "heuristic tape brief (offline preview)",
-  };
+  if (!live || !text) throw new Error("LLM returned no brief");
+  return { brief: text, source };
 }
 
 async function gatherContext(query: string, symbols: string[]): Promise<LlmContext> {
-  // Defaults from mock so the context is never empty.
-  const mockNews = buildNewsImpacts(8);
-  let news: LlmContext["news"] = mockNews.map((n) => ({
-    id: n.id, title: n.title, source: n.source, sentiment: n.sentiment,
-    conviction: n.conviction, symbols: n.symbols, publishedAt: n.publishedAt,
+  if (!hasSosoKey()) throw new Error("Missing SOSO_API_KEY");
+  const [newsRes, marketRes, sectorRes, macroRes] = await Promise.all([
+    getNews(8),
+    getMarketSnapshot(),
+    getSectorSpotlight(),
+    getMacroEvents(),
+  ]);
+  const news: LlmContext["news"] = (newsRes.data ?? []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    source: n.source,
+    sentiment: n.sentiment ?? deriveSentiment(n.title),
+    conviction: n.conviction ?? deriveConviction(n),
+    symbols: n.symbols,
+    publishedAt: n.publishedAt,
   }));
-  let sectors: LlmContext["sectors"] = [];
-  let macro: LlmContext["macro"] = [];
-  let market: LlmContext["market"] = [];
-  let etfFlows: LlmContext["etfFlows"] = undefined;
+  const market = (marketRes.data ?? []).slice(0, 20).map((m) => ({ symbol: m.symbol, price: m.price, change24h: m.change24h }));
+  const sectors = (sectorRes.data ?? []).map((s) => ({ sector: s.sector, change24h: s.change24h, marketCap: s.marketCap }));
+  const macro = (macroRes.data ?? []).map((e) => ({ title: e.title, scheduledAt: e.scheduledAt, importance: e.importance }));
 
-  if (hasSosoKey()) {
-    try {
-      const [newsRes, marketRes, sectorRes, macroRes] = await Promise.all([
-        getNews(8),
-        getMarketSnapshot().catch(() => ({ data: [] })),
-        getSectorSpotlight().catch(() => ({ data: [] })),
-        getMacroEvents().catch(() => ({ data: [] })),
-      ]);
-      if (newsRes.data?.length) {
-        news = newsRes.data.map((n) => ({
-          id: n.id,
-          title: n.title,
-          source: n.source,
-          sentiment: n.sentiment ?? deriveSentiment(n.title),
-          conviction: n.conviction ?? deriveConviction(n),
-          symbols: n.symbols,
-          publishedAt: n.publishedAt,
-        }));
-      }
-      if (marketRes.data?.length) {
-        market = marketRes.data.slice(0, 20).map((m) => ({ symbol: m.symbol, price: m.price, change24h: m.change24h }));
-      }
-      if (sectorRes.data?.length) {
-        sectors = sectorRes.data.map((s) => ({ sector: s.sector, change24h: s.change24h, marketCap: s.marketCap }));
-      }
-      if (macroRes.data?.length) {
-        macro = macroRes.data.map((e) => ({ title: e.title, scheduledAt: e.scheduledAt, importance: e.importance }));
-      }
-      // ETF flows for the focal asset (default BTC).
-      const etfSym = symbols.includes("ETH") ? "us-eth-spot" : "us-btc-spot";
-      const etf = await getEtfFlows(etfSym, 7).catch(() => ({ data: [] }));
-      if (etf.data?.length) {
-        etfFlows = etf.data.map((f) => ({ symbol: f.symbol, date: f.date, totalNetInflow: f.totalNetInflow }));
-      }
-    } catch {
-      // keep mock defaults
-    }
-  }
+  // ETF flows for the focal asset (default BTC); optional context.
+  const etfSym = symbols.includes("ETH") ? "us-eth-spot" : "us-btc-spot";
+  const etf = await getEtfFlows(etfSym, 7).catch(() => ({ data: [] }));
+  const etfFlows = etf.data?.length
+    ? etf.data.map((f) => ({ symbol: f.symbol, date: f.date, totalNetInflow: f.totalNetInflow }))
+    : undefined;
 
   return { query, news, sectors, macro, market, etfFlows };
-}
-
-function heuristicAnalysis(
-  query: string,
-  tags: IntentTag[],
-  symbols: string[],
-  ctx: LlmContext,
-): { analysis: AskResponse; source: string } {
-  const directional = tags.includes("down") ? -1 : tags.includes("up") ? 1 : 0;
-  const conviction = Math.min(
-    96,
-    Math.max(
-      32,
-      60 +
-        (directional !== 0 ? 14 : 0) +
-        (symbols.length > 0 ? 8 : 0) +
-        (tags.includes("macro") ? 6 : 0),
-    ),
-  );
-
-  const evidenceSeed = ctx.news
-    .filter((n) => (symbols.length === 0 ? true : (n.symbols ?? []).some((s) => symbols.includes(s))))
-    .slice(0, 3);
-  const evidence = evidenceSeed.length > 0 ? evidenceSeed : ctx.news.slice(0, 3);
-
-  const liveContradictions = buildContradictions();
-
-  const analysis: AskResponse = {
-    thesis: pickThesis(tags, symbols),
-    evidence: evidence.map((e) => ({
-      label: (e.sentiment ?? "news").toUpperCase(),
-      value: e.title,
-      source: e.source,
-    })),
-    contradictions: liveContradictions.slice(0, 2).map((c) => `${c.title} — ${c.resolution}`),
-    causes: [
-      "News-flow sentiment shifted in the last cycle.",
-      "Cross-sector breadth is " + (directional >= 0 ? "expanding" : "narrowing") + ".",
-      "Macro calendar has " + (tags.includes("macro") ? "active event risk" : "moderate overhang") + ".",
-    ],
-    impact:
-      directional > 0
-        ? "Continuation is plausible if flows stay positive and macro remains stable; size off vol, not narrative."
-        : directional < 0
-          ? "Volatility can stay elevated until macro event risk clears; defensive tilt is warranted."
-          : "Two-way risk dominates; intra-day reversals are likely until macro window closes.",
-    confidence: conviction / 100,
-    suggestions: buildSuggestions(tags),
-    sources: { newsCount: ctx.news.length, marketPoints: ctx.market.length || 12, macroEvents: ctx.macro.length || 3 },
-    citations: evidence.map((e) => ({ id: e.id, title: e.title, source: e.source })),
-  };
-
-  const source = hasSosoKey()
-    ? "heuristic/intelligence-engine + SoSoValue grounding"
-    : "heuristic/intelligence-engine (offline preview)";
-  return { analysis, source };
 }
 
 // ---------------------------------------------------------------------------
@@ -264,15 +94,11 @@ const SYMBOL_TO_CURRENCY_ID: Record<string, string> = {
 };
 
 export async function buildLiveNewsImpacts(limit = 8): Promise<{ items: NewsImpact[]; source: string }> {
-  if (!hasSosoKey()) {
-    return { items: buildNewsImpacts(limit), source: "internal/impact-engine (offline preview)" };
-  }
-  try {
+  if (!hasSosoKey()) throw new Error("Missing SOSO_API_KEY");
+  {
     const newsRes = await getNews(limit);
     const news = newsRes.data ?? [];
-    if (!news.length) {
-      return { items: buildNewsImpacts(limit), source: "SoSoValue/news empty → mock impacts" };
-    }
+    if (!news.length) return { items: [], source: "SoSoValue/news (empty)" };
 
     // Fetch klines once per distinct focal symbol referenced by the headlines.
     const focal = new Set<string>();
@@ -313,11 +139,10 @@ export async function buildLiveNewsImpacts(limit = 8): Promise<{ items: NewsImpa
         reactionWindowMin = impact.reactionWindowMin;
         decayHalfLifeMin = impact.decayHalfLifeMin;
       } else {
-        // Fallback estimate when no klines: sign from sentiment, small magnitude.
-        const sign = sentiment === "bearish" ? -1 : sentiment === "bullish" ? 1 : 0;
-        priceImpactPct = sign * 0.8;
-        reactionWindowMin = 30;
-        decayHalfLifeMin = 60;
+        // No klines for this symbol: report as unmeasured, never estimate.
+        priceImpactPct = 0;
+        reactionWindowMin = 0;
+        decayHalfLifeMin = 0;
       }
 
       return {
@@ -332,10 +157,11 @@ export async function buildLiveNewsImpacts(limit = 8): Promise<{ items: NewsImpa
         reactionWindowMin,
         decayHalfLifeMin,
         classification: cls,
+        measured: impact != null,
         aiSummary:
           impact != null
             ? `Measured ${priceImpactPct >= 0 ? "+" : ""}${priceImpactPct}% over ${reactionWindowMin}m after release; impact half-life ≈ ${decayHalfLifeMin}m.`
-            : `Derived ${sentiment} read from headline; price-window measurement unavailable for ${sym}.`,
+            : `Sentiment read from headline only; price-window not measured for ${sym}.`,
       };
     });
 
@@ -344,8 +170,6 @@ export async function buildLiveNewsImpacts(limit = 8): Promise<{ items: NewsImpa
         ? `SoSoValue/news + klines (${measuredCount}/${items.length} price-measured)`
         : "SoSoValue/news + derived (klines unavailable)";
     return { items, source };
-  } catch (err) {
-    return { items: buildNewsImpacts(limit), source: `internal/impact-engine (fallback: ${(err as Error).message.slice(0, 60)})` };
   }
 }
 
@@ -364,10 +188,7 @@ export async function detectContradictions(): Promise<{ items: Contradiction[]; 
   const items: Contradiction[] = [];
   const surfaces: string[] = [];
 
-  // No SoSoValue key → nothing real to cross-check; return offline preview note.
-  if (!hasSosoKey() && !hasSodexKey()) {
-    return { items: buildContradictions(), source: "internal/contradiction-engine (offline preview)" };
-  }
+  if (!hasSosoKey() && !hasSodexKey()) throw new Error("No live data source configured");
 
   // --- Pull the inputs we have access to ---
   let news: NewsItem[] = [];

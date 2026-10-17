@@ -28,9 +28,10 @@ export type SignalsResult = {
 const SEVERITY_RANK = { low: 1, medium: 2, high: 3 } as const;
 
 export async function buildSignals(): Promise<SignalsResult> {
+  // Same news limit as detectContradictions so both share one cached SoSoValue call.
   const [index, news, contra] = await Promise.all([
     buildMarketMindIndex(),
-    buildLiveNewsImpacts(24),
+    buildLiveNewsImpacts(10),
     detectContradictions(),
   ]);
 
@@ -78,4 +79,9 @@ export async function buildSignals(): Promise<SignalsResult> {
 
   signals.sort((a, b) => b.conviction - a.conviction);
   return { signals, generatedAt: Date.now(), source: index.source };
+}
+
+export async function getSignal(asset: string): Promise<{ signal: OrcaSignal | null; source: string }> {
+  const { signals, source } = await buildSignals();
+  return { signal: signals.find((s) => s.asset === asset.toUpperCase()) ?? null, source };
 }

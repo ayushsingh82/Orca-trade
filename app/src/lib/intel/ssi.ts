@@ -6,91 +6,10 @@
 //     constituent's 24h contribution. Read-only research/comparison context.
 //  2. The MarketMind Index — a COMPUTED, PUBLISHED methodology basket (market-cap
 //     weighted with a single-name cap), NOT an on-chain mint. NAV is computed
-//     from live constituent prices when a key is present, mock otherwise.
+//     from live constituent prices; throws without live data (no mock).
 
-import {
-  getIndexConstituents,
-  getIndices,
-  getMarketSnapshot,
-  hasSosoKey,
-  type MarketSnapshot,
-} from "./sosovalue";
-import { buildSsiIndices, type SsiIndex } from "./mock";
+import { getMarketSnapshot, hasSosoKey, type MarketSnapshot } from "./sosovalue";
 import { clamp, round } from "./analytics";
-
-// ---------------------------------------------------------------------------
-// Live SSI baskets
-// ---------------------------------------------------------------------------
-
-export async function buildLiveSsiIndices(): Promise<{ indices: SsiIndex[]; livePoints: number; source: string }> {
-  if (!hasSosoKey()) {
-    return { indices: buildSsiIndices(), livePoints: 0, source: "SSI Protocol (offline preview)" };
-  }
-  try {
-    const idxRes = await getIndices();
-    const indexList = idxRes.data ?? [];
-    if (!indexList.length) {
-      return { indices: buildSsiIndices(), livePoints: 0, source: "SSI/indices empty → mock" };
-    }
-
-    // One snapshot board for price lookups.
-    const snapRes = await getMarketSnapshot().catch(() => ({ data: [] as MarketSnapshot[] }));
-    const priceMap = new Map<string, MarketSnapshot>();
-    for (const s of snapRes.data ?? []) priceMap.set(s.symbol.toUpperCase(), s);
-
-    const indices: SsiIndex[] = [];
-    let livePoints = 0;
-
-    // Limit to the first few indices to stay within the rate budget.
-    for (const idx of indexList.slice(0, 4)) {
-      try {
-        const consRes = await getIndexConstituents(idx.ticker);
-        const cons = consRes.data ?? [];
-        if (!cons.length) continue;
-        livePoints += cons.length;
-
-        // Normalize weights to %.
-        const totalW = cons.reduce((s, c) => s + (c.weight || 0), 0) || 1;
-        let weightedChange = 0;
-        const basket = cons.map((c) => {
-          const snap = priceMap.get(c.symbol.toUpperCase());
-          const w = (c.weight / totalW) * 100;
-          const change = snap?.change24h ?? 0;
-          const contribution24h = round((w / 100) * change, 2);
-          weightedChange += contribution24h;
-          return {
-            symbol: c.symbol.toUpperCase(),
-            weight: round(w, 1),
-            drift7d: 0, // not available from a single snapshot; reported as 0 (honest)
-            contribution24h,
-          };
-        });
-
-        indices.push({
-          index: idx.ticker,
-          level: round(idx.nav ?? 100 + weightedChange, 2),
-          change24h: round(idx.change24h ?? weightedChange, 2),
-          drift: round(Math.abs(weightedChange), 2),
-          rebalanceWindow: "see methodology",
-          basket,
-        });
-      } catch {
-        /* skip this index */
-      }
-    }
-
-    if (!indices.length) {
-      return { indices: buildSsiIndices(), livePoints: 0, source: "SSI constituents unavailable → mock" };
-    }
-    return {
-      indices,
-      livePoints,
-      source: "SoSoValue/indices + constituents + snapshot (live NAV/contribution)",
-    };
-  } catch (err) {
-    return { indices: buildSsiIndices(), livePoints: 0, source: `SSI (fallback: ${(err as Error).message.slice(0, 60)})` };
-  }
-}
 
 // ---------------------------------------------------------------------------
 // The MarketMind Index (MMX) — computed, published methodology.
@@ -123,46 +42,34 @@ export type MmxIndex = {
 };
 
 // Candidate universe for the MarketMind Index. Reference market caps (USD) are
-// only used as a deterministic fallback when no live snapshot is available.
-const MMX_UNIVERSE: { symbol: string; refCap: number; refPrice: number }[] = [
-  { symbol: "BTC", refCap: 1_300_000_000_000, refPrice: 66000 },
-  { symbol: "ETH", refCap: 420_000_000_000, refPrice: 3200 },
-  { symbol: "SOL", refCap: 78_000_000_000, refPrice: 165 },
-  { symbol: "BNB", refCap: 90_000_000_000, refPrice: 600 },
-  { symbol: "AVAX", refCap: 14_000_000_000, refPrice: 35 },
-  { symbol: "LINK", refCap: 11_000_000_000, refPrice: 18 },
-  { symbol: "TAO", refCap: 4_000_000_000, refPrice: 480 },
-  { symbol: "ONDO", refCap: 2_500_000_000, refPrice: 1.4 },
-];
+
+// Kept to 5 names: the SoSoValue Demo plan allows 10 requests/min (1 id map + 1 snapshot each + news/sectors/macro).
+const MMX_UNIVERSE = ["BTC", "ETH", "SOL", "BNB", "XRP"];
 
 const SINGLE_NAME_CAP = 35; // %
 // Inception timestamp for the published methodology (deterministic, demo-stable).
 const MMX_INCEPTION = Date.UTC(2026, 4, 1); // 2026-05-01
 
 export async function buildMarketMindIndex(): Promise<MmxIndex> {
-  let snapshots: Map<string, MarketSnapshot> | null = null;
-  let live = false;
+  if (!hasSosoKey()) throw new Error("Missing SOSO_API_KEY");
 
-  if (hasSosoKey()) {
-    try {
-      const snapRes = await getMarketSnapshot();
-      if (snapRes.data?.length) {
-        snapshots = new Map(snapRes.data.map((s) => [s.symbol.toUpperCase(), s]));
-        live = true;
-      }
-    } catch {
-      /* fall back to ref values */
-    }
-  }
+  // One snapshot call per symbol (cached upstream). Symbols without a live
+  // snapshot are dropped, never filled with reference values.
+  const results = await Promise.allSettled(MMX_UNIVERSE.map((sym) => getMarketSnapshot(sym)));
+  const snapshots = new Map<string, MarketSnapshot>();
+  results.forEach((r, i) => {
+    const snap = r.status === "fulfilled" ? r.value.data?.[0] : undefined;
+    if (snap && snap.marketCap) snapshots.set(MMX_UNIVERSE[i], snap);
+  });
+  if (snapshots.size === 0) throw new Error("No live market snapshots available");
 
   // 1. Raw market-cap weights.
-  const rows = MMX_UNIVERSE.map((u) => {
-    const snap = snapshots?.get(u.symbol);
-    const price = snap?.price ?? u.refPrice;
-    const change24h = snap?.change24h ?? 0;
-    const cap = snap?.marketCap ?? u.refCap;
-    return { symbol: u.symbol, price, change24h, cap };
-  });
+  const rows = [...snapshots.entries()].map(([symbol, snap]) => ({
+    symbol,
+    price: snap.price,
+    change24h: snap.change24h,
+    cap: snap.marketCap as number,
+  }));
   const totalCap = rows.reduce((s, r) => s + r.cap, 0) || 1;
   const rawWeights = rows.map((r) => ({ ...r, rawWeight: (r.cap / totalCap) * 100 }));
 
@@ -204,9 +111,7 @@ export async function buildMarketMindIndex(): Promise<MmxIndex> {
     change24h,
     constituents,
     convictionScore,
-    source: live
-      ? "MarketMind Index — computed from SoSoValue live snapshot"
-      : "MarketMind Index — computed from reference caps (offline preview)",
+    source: `SoSoValue live snapshot (${snapshots.size}/${MMX_UNIVERSE.length} assets)`,
   };
 }
 

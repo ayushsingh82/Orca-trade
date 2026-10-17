@@ -54,6 +54,8 @@ export type NewsImpact = {
     | "narrative"
     | "earnings"
     | "other";
+  /** false when no klines were available; price fields are 0 and must not be used. */
+  measured?: boolean;
   aiSummary: string;
 };
 

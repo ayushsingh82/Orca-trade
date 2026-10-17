@@ -7,9 +7,9 @@
 //
 // Rate discipline: the Demo plan allows only 10 req/min and 10k calls/MONTH, so
 // every call is served from a generous in-memory TTL cache (3-5 min). Callers
-// still fall back to lib/mock.ts on any throw, so a dead/limited endpoint never
-// breaks the UI. Klines above 1d require a whitelisted key on this plan, so
-// getKlines short-circuits to a fallback WITHOUT spending a call.
+// throw on failure (Orca never serves mock data), so a dead/limited endpoint never
+// gets masked. Klines above 1d require a whitelisted key on this plan, so
+// getKlines throws WITHOUT spending a call.
 
 const SOSO_BASE_URL = "https://openapi.sosovalue.com/openapi/v1";
 const SOSO_API_KEY = process.env.SOSO_API_KEY ?? "";
@@ -88,28 +88,68 @@ export function hasSosoKey(): boolean {
 
 // --- cached GET that unwraps { code, message, data } -------------------------
 
-const cache = new Map<string, { at: number; data: unknown }>();
+// State lives on globalThis so every route/page in the Next process shares one
+// cache, one in-flight map and one rate window (module instances are per-bundle).
+type SosoState = {
+  cache: Map<string, { at: number; data: unknown }>;
+  inflight: Map<string, Promise<unknown>>;
+  calls: number[];
+};
+const g = globalThis as unknown as { __orcaSoso?: SosoState };
+const state: SosoState = (g.__orcaSoso ??= { cache: new Map(), inflight: new Map(), calls: [] });
+
 const DEFAULT_TTL_MS = 180_000; // 3 min — Demo plan is 10k calls/month
+const WINDOW_MS = 60_000;
+const MAX_CALLS_PER_WINDOW = 8; // Demo plan allows 10/min; keep headroom
+
+// Sliding-window limiter: wait for a free slot instead of firing a call that
+// would be rejected. Real data arrives slower on a cold start, never fabricated.
+async function acquireSlot(): Promise<void> {
+  for (;;) {
+    const now = Date.now();
+    state.calls = state.calls.filter((t) => now - t < WINDOW_MS);
+    if (state.calls.length < MAX_CALLS_PER_WINDOW) {
+      state.calls.push(now);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, state.calls[0] + WINDOW_MS - now + 50));
+  }
+}
 
 async function cachedGet<T>(path: string, ttlMs = DEFAULT_TTL_MS): Promise<T> {
   if (!SOSO_API_KEY) throw new Error("Missing SOSO_API_KEY");
-  const now = Date.now();
-  const hit = cache.get(path);
-  if (hit && now - hit.at < ttlMs) return hit.data as T;
+  const hit = state.cache.get(path);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.data as T;
 
-  const response = await fetch(`${SOSO_BASE_URL}${path}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json", "x-soso-api-key": SOSO_API_KEY },
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`SoSoValue ${response.status} on ${path}`);
-  const body = (await response.json()) as { code?: number; message?: string; data?: unknown };
-  if (body.code !== undefined && body.code !== 0) {
-    throw new Error(`SoSoValue code ${body.code} on ${path}: ${body.message ?? ""}`);
-  }
-  const data = (body.data ?? body) as T;
-  cache.set(path, { at: now, data });
-  return data;
+  const pending = state.inflight.get(path);
+  if (pending) return pending as Promise<T>;
+
+  const request = (async () => {
+    try {
+      await acquireSlot();
+      const response = await fetch(`${SOSO_BASE_URL}${path}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json", "x-soso-api-key": SOSO_API_KEY },
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error(`SoSoValue ${response.status} on ${path}`);
+      const body = (await response.json()) as { code?: number; message?: string; data?: unknown };
+      if (body.code !== undefined && body.code !== 0) {
+        throw new Error(`SoSoValue code ${body.code} on ${path}: ${body.message ?? ""}`);
+      }
+      const data = (body.data ?? body) as T;
+      state.cache.set(path, { at: Date.now(), data });
+      return data;
+    } catch (err) {
+      // Serve the last real response (stale) rather than failing, if we have one.
+      if (hit) return hit.data as T;
+      throw err;
+    } finally {
+      state.inflight.delete(path);
+    }
+  })();
+  state.inflight.set(path, request);
+  return request;
 }
 
 const pct = (frac: unknown): number => Math.round(Number(frac ?? 0) * 100 * 100) / 100;
