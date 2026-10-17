@@ -1,7 +1,8 @@
 import { Connection, VersionedTransaction } from "@solana/web3.js";
 import type { Keypair } from "@solana/web3.js";
 import type { Proposal } from "@/lib/risk/types";
-import { EXECUTION_ENABLED, RPC_URL } from "./config";
+import { EXECUTION_ENABLED, JITO_TIP_LAMPORTS, RPC_URL } from "./config";
+import { sendViaJito } from "./jito";
 import { buildSwapTransaction } from "./jupiter";
 import { quoteProposal } from "./pricing";
 
@@ -30,7 +31,8 @@ export async function executeProposal(proposal: Proposal, signer: Keypair, usdPe
     };
   }
 
-  const signature = await connection.sendRawTransaction(tx.serialize(), { maxRetries: 3 });
+  // With a Jito tip configured, land the swap as a private bundle; otherwise use the normal RPC path.
+  const signature = JITO_TIP_LAMPORTS > 0 ? await sendViaJito(tx) : await connection.sendRawTransaction(tx.serialize(), { maxRetries: 3 });
   const latest = await connection.getLatestBlockhash();
   const conf = await connection.confirmTransaction({ signature, ...latest }, "confirmed");
   if (conf.value.err) throw new Error(`transaction failed on-chain: ${JSON.stringify(conf.value.err)}`);

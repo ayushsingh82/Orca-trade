@@ -1,4 +1,4 @@
-import { JUPITER_BASE, PRIORITY_FEE_LAMPORTS } from "./config";
+import { JITO_TIP_LAMPORTS, JUPITER_BASE, PRIORITY_FEE_LAMPORTS } from "./config";
 
 export type JupiterQuote = {
   inputMint: string;
@@ -43,8 +43,12 @@ export async function buildSwapTransaction(quote: JupiterQuote, userPublicKey: s
       quoteResponse: quote,
       userPublicKey,
       dynamicComputeUnitLimit: true,
-      // Optional fixed priority fee to land reliably under congestion.
-      ...(PRIORITY_FEE_LAMPORTS > 0 ? { prioritizationFeeLamports: PRIORITY_FEE_LAMPORTS } : {}),
+      // A Jito tip (bundle path) takes precedence over a plain priority fee.
+      ...(JITO_TIP_LAMPORTS > 0
+        ? { prioritizationFeeLamports: { jitoTipLamports: JITO_TIP_LAMPORTS } }
+        : PRIORITY_FEE_LAMPORTS > 0
+          ? { prioritizationFeeLamports: PRIORITY_FEE_LAMPORTS }
+          : {}),
     }),
   });
   return r.swapTransaction;
