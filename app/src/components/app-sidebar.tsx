@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bot, LayoutDashboard, MessageSquare, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
+import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -36,7 +37,10 @@ export function AppSidebar() {
           );
         })}
       </nav>
-      <p className="mt-auto rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+      <div className="mt-auto">
+        <UserMenu />
+      </div>
+      <p className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
         Live data · observe mode. No funds at risk.
       </p>
     </aside>
