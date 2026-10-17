@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, LayoutDashboard, Wallet } from "lucide-react";
+import { Bot, LayoutDashboard, MessageSquare, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/dashboard", label: "Opportunities", icon: LayoutDashboard },
+  { href: "/ask", label: "Ask Orca", icon: MessageSquare },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/portfolio", label: "Portfolio", icon: Wallet },
 ];
@@ -36,7 +37,7 @@ export function AppSidebar() {
         })}
       </nav>
       <p className="mt-auto rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-        Mock data · observe mode. No funds at risk.
+        Live data · observe mode. No funds at risk.
       </p>
     </aside>
   );
