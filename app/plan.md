@@ -1,0 +1,51 @@
+# Orca app — execution plan & status
+
+Product plan lives one level up: `../IDEA.md` (what) and `../PLAN.md` (milestones, tiers, billing). This file is the *how we execute* doc for the app in this folder, in the same spirit as MarketMind's own `plan.md`.
+
+## How we execute
+
+1. **One milestone at a time**, each ending demoable and passing `tsc`, `eslint`, `next build`.
+2. **Port, don't fork.** MarketMind code is copied into `src/lib/intel/` as a frozen engine with minimal edits (env-config only). Orca-specific logic lives *outside* it (`src/lib/signals.ts`, later `agents/`, `risk/`, `exec/`). This keeps the engine upgradable and the new work obvious.
+3. **LLM proposes, deterministic code disposes.** No execution path may depend on LLM output without passing the Risk Engine.
+4. **Honest provenance.** Every payload carries a `source` string (live vs. mock); the UI shows it.
+5. **UI = BestUI theme exactly** (`src/app/globals.css` tokens: bg `#151515`, card `#1a1a1a`, muted `#1e1e1e`, border white/8%, violet accent; Geist + Bricolage Grotesque; dark-only).
+6. **Secrets only via env** (`.env.local`, gitignored). Never hardcoded.
+
+## How we take inspiration from MarketMind
+
+| MarketMind | What we keep | What we change |
+| --- | --- | --- |
+| `lib/sosovalue.ts` | Client, auth header, mock fallback, `source` field | API key moved to `SOSO_API_KEY` env (MarketMind hardcoded it) |
+| `lib/sodex.ts` | Read-only microstructure (spread, depth, taker ratio, funding) | Unchanged for now; SoDEX stays a data source, execution venue TBD |
+| `lib/marketmind.ts`, `analytics.ts` | News impact + decay, narratives, contradiction detection | Contradictions become a *gate* on agents, not just a display |
+| `lib/llm.ts` | Grounded-JSON prompt + defensive `coerceAnalysis` | Endpoint from env; unset => templated fallback. Will add Anthropic provider |
+| `lib/ssi.ts` (MMX index) | Constituent universe + prices/changes as the asset universe | Becomes the asset universe for signals |
+| `api/marketmind/autofund` | Idea of a structured handoff payload | Replaced by `OrcaSignal` (`src/lib/signals.ts`, `/api/signals`) |
+| UI pages (dashboard/ask/news/…) | Information architecture, card patterns | Restyled to BestUI theme; reorganised around Opportunities → Agents → Portfolio |
+| "Never trades" stance | Honesty, citations, mock fallbacks | **Reversed**: Orca executes, but only inside a policy-bound, non-custodial session key |
+
+Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex, sosovalue, ssi, types`. Not yet ported: Ask Orca page/route, news, sectors, watchlist, staking pages and the remaining API routes — pull in as needed per milestone.
+
+## Status
+
+| Milestone | State |
+| --- | --- |
+| M0 Scaffold + BestUI theme | Done |
+| M1 Intelligence layer | **In progress** — engine ported, `OrcaSignal` + `/api/signals` + live Opportunities page working. Remaining: Ask Orca, news/evidence drill-down, signal detail page, `source` badge in UI |
+| M0.5 Accounts | Next |
+| M2 Agents (observe/paper) | Not started |
+| M3 Risk Engine + policy | Not started |
+| M4 Wallet + testnet execution | Not started |
+| M5 Autonomous + portfolio | Not started |
+| M6–M8 Hardening, billing, growth | Not started |
+
+## Next steps (in order)
+1. Finish M1: port `/ask` (route + page) as Ask Orca; signal detail page with citations and contradictions; show `source` badge.
+2. M0.5: auth (wallet SIWE + email), Postgres + Drizzle, free-tier limits and usage counters.
+3. M2: `agent`/`policy`/`decision` schema, strategy templates, runtime loop in observe mode, Decision log UI, paper PnL.
+4. M3: Risk Engine as pure functions with exhaustive unit tests before any wallet code.
+
+## Known issues / notes
+- Signal scoring in `src/lib/signals.ts` is a simple momentum + news-bias blend; a heuristic, to be refined and backtested before agents trade on it.
+- The SoSoValue key previously committed in MarketMind's public repo should be rotated; Orca reads it from `.env.local`.
+- Contradiction-to-asset matching is by symbol text match; revisit when contradictions get structured asset tags.
