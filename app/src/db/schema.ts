@@ -12,6 +12,9 @@ export const users = pgTable("users", {
   telegramChatId: text("telegram_chat_id"),
   stripeCustomerId: text("stripe_customer_id").unique(),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  referralCode: text("referral_code").unique(),
+  /** Referral code of whoever invited this user. */
+  referredBy: text("referred_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -45,6 +48,8 @@ export const agents = pgTable("agents", {
   /** Paper agents trade virtual USDC at real quoted prices and never touch the chain. */
   paper: boolean("paper").notNull().default(true),
   paperStartUsd: doublePrecision("paper_start_usd").notNull().default(1000),
+  /** Opt-in: show this (paper) agent on the public leaderboard. */
+  listed: boolean("listed").notNull().default(false),
   /** The agent's limited-authority signer. It only ever holds what the user funds it with. */
   walletPublicKey: text("wallet_public_key").notNull(),
   walletSecretEnc: text("wallet_secret_enc").notNull(),
@@ -61,6 +66,8 @@ export const decisions = pgTable("decisions", {
     .notNull()
     .references(() => agents.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Opt-in: anyone with the link can view this decision at /d/[id]. */
+  shared: boolean("shared").notNull().default(false),
   signalSource: text("signal_source").notNull(),
   rationale: jsonb("rationale").$type<string[]>().notNull(),
   citations: jsonb("citations").$type<{ id: string; title: string; source: string }[]>().notNull(),

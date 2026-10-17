@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { resolveReferrer } from "@/lib/auth/referral";
 import { startSession, verifyToken } from "@/lib/auth/session";
 import { signInMessage, verifyWalletSignature } from "@/lib/auth/solana";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const { wallet, signature, challenge } = (await req.json().catch(() => ({}))) as {
+  const { wallet, signature, challenge, ref } = (await req.json().catch(() => ({}))) as {
+    ref?: string;
     wallet?: string;
     signature?: string;
     challenge?: string;
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [existing] = await db().select().from(users).where(eq(users.wallet, wallet)).limit(1);
-  const user = existing ?? (await db().insert(users).values({ wallet }).returning())[0];
+  const user = existing ?? (await db().insert(users).values({ wallet, referredBy: await resolveReferrer(ref) }).returning())[0];
   await startSession(user.id);
   return NextResponse.json({ ok: true, user: { id: user.id, wallet: user.wallet, plan: user.plan } });
 }

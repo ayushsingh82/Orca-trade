@@ -3,12 +3,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
+import { resolveReferrer } from "@/lib/auth/referral";
 import { startSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const { email, password } = (await req.json().catch(() => ({}))) as { email?: string; password?: string };
+  const { email, password, ref } = (await req.json().catch(() => ({}))) as { email?: string; password?: string; ref?: string };
   const normalized = email?.trim().toLowerCase();
   if (!normalized || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
     return NextResponse.json({ ok: false, error: "valid email required" }, { status: 400 });
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   const [user] = await db()
     .insert(users)
-    .values({ email: normalized, passwordHash: await hashPassword(password) })
+    .values({ email: normalized, passwordHash: await hashPassword(password), referredBy: await resolveReferrer(ref) })
     .returning();
   await startSession(user.id);
   return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, plan: user.plan } });

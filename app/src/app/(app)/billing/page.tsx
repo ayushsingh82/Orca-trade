@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BillingButton } from "@/components/billing-buttons";
 import { PageHeader } from "@/components/page-header";
+import { ensureReferralCode } from "@/lib/auth/referral";
 import { getUser } from "@/lib/auth/session";
 import { AGENT_LIMITS, LIMITS, type Plan } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
       </>
     );
   }
+  const referralCode = await ensureReferralCode(user);
   return (
     <>
       <PageHeader title="Billing" description={`You are on the ${user.plan} plan.`} />
@@ -61,6 +63,11 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
           <BillingButton endpoint="/api/billing/portal" label="Manage subscription" />
         </div>
       )}
+      <section className="mt-8 rounded-xl border bg-card p-5">
+        <h2 className="font-display text-lg font-semibold">Invite friends</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Share your link. Sign-ups through it are recorded against your account.</p>
+        <p className="mt-2 break-all font-mono text-xs">/login?ref={referralCode}</p>
+      </section>
     </>
   );
 }
