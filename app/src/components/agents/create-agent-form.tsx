@@ -18,6 +18,7 @@ export function CreateAgentForm() {
   const [maxTradeUsd, setMaxTradeUsd] = useState(25);
   const [maxDailyUsd, setMaxDailyUsd] = useState(100);
   const [minConviction, setMinConviction] = useState(60);
+  const [paper, setPaper] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export function CreateAgentForm() {
       const res = await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, strategy, policy: { mode, maxTradeUsd, maxDailyUsd, minConviction } }),
+        body: JSON.stringify({ name, strategy, paper, policy: { mode, maxTradeUsd, maxDailyUsd, minConviction } }),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error);
@@ -79,6 +80,10 @@ export function CreateAgentForm() {
           <input type="number" min={0} max={100} value={minConviction} onChange={(e) => setMinConviction(Number(e.target.value))} className={field} />
         </label>
       </div>
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={paper} onChange={(e) => setPaper(e.target.checked)} />
+        Paper trading (virtual $1,000 at real quoted prices; no funds at risk)
+      </label>
       <button disabled={busy} className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50">
         {busy ? "Creating…" : "Create agent"}
       </button>

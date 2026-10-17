@@ -1,4 +1,4 @@
-import { date, doublePrecision, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, doublePrecision, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Check, Policy, Proposal, Verdict } from "@/lib/risk/types";
 
 export const users = pgTable("users", {
@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   /** Base58 Solana public key. */
   wallet: text("wallet").unique(),
   plan: text("plan", { enum: ["free", "pro", "teams"] }).notNull().default("free"),
+  /** Telegram chat id for alerts (optional). */
+  telegramChatId: text("telegram_chat_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -38,13 +40,16 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   strategy: text("strategy", { enum: STRATEGIES }).notNull(),
   policy: jsonb("policy").$type<Policy>().notNull(),
+  /** Paper agents trade virtual USDC at real quoted prices and never touch the chain. */
+  paper: boolean("paper").notNull().default(true),
+  paperStartUsd: doublePrecision("paper_start_usd").notNull().default(1000),
   /** The agent's limited-authority signer. It only ever holds what the user funds it with. */
   walletPublicKey: text("wallet_public_key").notNull(),
   walletSecretEnc: text("wallet_secret_enc").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const DECISION_STATUS = ["logged", "rejected", "pending", "executed", "simulated", "failed"] as const;
+export const DECISION_STATUS = ["logged", "rejected", "pending", "paper", "executed", "simulated", "failed"] as const;
 export type DecisionStatus = (typeof DECISION_STATUS)[number];
 
 /** One row per agent run: the full replayable record (signals, reasoning, risk checks, outcome). */
@@ -63,6 +68,9 @@ export const decisions = pgTable("decisions", {
   status: text("status", { enum: DECISION_STATUS }).notNull(),
   /** USD notional that actually moved; counts toward the daily cap. */
   executedUsd: doublePrecision("executed_usd").notNull().default(0),
+  /** Paper fills: units of the asset bought (+) or sold (-), and the real quoted price. */
+  fillUnits: doublePrecision("fill_units"),
+  fillPrice: doublePrecision("fill_price"),
   txSignature: text("tx_signature"),
   error: text("error"),
 });

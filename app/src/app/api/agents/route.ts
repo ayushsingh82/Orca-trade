@@ -14,6 +14,8 @@ const publicAgent = (a: typeof agents.$inferSelect) => ({
   name: a.name,
   strategy: a.strategy,
   policy: a.policy,
+  paper: a.paper,
+  paperStartUsd: a.paperStartUsd,
   walletPublicKey: a.walletPublicKey,
   createdAt: a.createdAt,
 });
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Sign in required" }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { name?: string; strategy?: string; policy?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { name?: string; strategy?: string; policy?: unknown; paper?: boolean };
   const name = body.name?.trim();
   if (!name || name.length > 60) return NextResponse.json({ ok: false, error: "name required (max 60 chars)" }, { status: 400 });
   if (!STRATEGIES.includes(body.strategy as Strategy)) return NextResponse.json({ ok: false, error: "invalid strategy" }, { status: 400 });
@@ -46,10 +48,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Free plan agents are observe-only. Upgrade to enable propose or autonomous." }, { status: 403 });
   }
 
+  const paper = body.paper !== false;
+  if (!paper && user.plan === "free") {
+    return NextResponse.json({ ok: false, error: "Live (non-paper) agents need the Pro plan" }, { status: 403 });
+  }
+
   const signer = createAgentSigner();
   const [row] = await db()
     .insert(agents)
-    .values({ userId: user.id, name, strategy: body.strategy as Strategy, policy, walletPublicKey: signer.publicKey, walletSecretEnc: signer.secretEnc })
+    .values({ userId: user.id, name, paper, strategy: body.strategy as Strategy, policy, walletPublicKey: signer.publicKey, walletSecretEnc: signer.secretEnc })
     .returning();
   return NextResponse.json({ ok: true, agent: publicAgent(row) });
 }

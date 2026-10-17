@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_STYLE: Record<string, string> = {
   executed: "text-emerald-400",
+  paper: "text-emerald-400",
   simulated: "text-sky-400",
   pending: "text-amber-400",
   rejected: "text-red-400",
@@ -56,13 +57,17 @@ export default async function AgentsPage() {
                 <div>
                   <h2 className="font-display text-lg font-semibold">{a.name}</h2>
                   <p className="text-xs text-muted-foreground">
-                    {a.strategy.replace("_", " ")} · {a.policy.mode} · ${a.policy.maxTradeUsd}/trade · ${a.policy.maxDailyUsd}/day
+                    {a.strategy.replace("_", " ")} · {a.paper ? "paper" : "live"} · {a.policy.mode} · ${a.policy.maxTradeUsd}/trade · ${a.policy.maxDailyUsd}/day
                   </p>
                 </div>
                 <ActionButton url={`/api/agents/${a.id}/run`} label="Run now" busyLabel="Running…" />
               </div>
-              <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground">Agent wallet: {a.walletPublicKey}</p>
-              <FundAgent address={a.walletPublicKey} />
+              {!a.paper && (
+                <>
+                  <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground">Agent wallet: {a.walletPublicKey}</p>
+                  <FundAgent address={a.walletPublicKey} />
+                </>
+              )}
 
               <h3 className="mt-5 text-xs uppercase tracking-wide text-muted-foreground">Decision log</h3>
               <ul className="mt-2 divide-y">
@@ -72,6 +77,7 @@ export default async function AgentsPage() {
                       <span className={cn("text-xs font-medium uppercase", STATUS_STYLE[d.status])}>{d.status}</span>
                       <span>
                         {d.proposal ? `${d.proposal.side} ${d.proposal.asset} $${d.proposal.sizeUsd}` : "No action"}
+                        {d.fillPrice ? ` @ $${d.fillPrice.toFixed(2)}` : ""}
                       </span>
                       <span className="font-mono text-xs text-muted-foreground">{d.createdAt.toISOString().slice(0, 16).replace("T", " ")}</span>
                       {d.status === "pending" && <ActionButton url={`/api/decisions/${d.id}/approve`} label="Approve" busyLabel="Executing…" />}

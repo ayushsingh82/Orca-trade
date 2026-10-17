@@ -1,7 +1,9 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { decisions, type Agent, type Decision } from "@/db/schema";
+import { agents, decisions, users, type Agent, type Decision } from "@/db/schema";
+import { sendAlert } from "@/lib/alerts";
 import { GLOBAL_KILL } from "@/lib/exec/config";
+import { paperFill, paperPortfolio } from "@/lib/exec/paper";
 import { readPortfolio } from "@/lib/exec/portfolio";
 import { executeProposal } from "@/lib/exec/router";
 import { loadAgentKeypair } from "@/lib/exec/signer";
@@ -20,82 +22,91 @@ async function spentToday(agentId: string) {
   return Number(row?.total ?? 0);
 }
 
-async function riskContext(agent: Agent, prices: Record<string, number>, asset?: string) {
-  const [portfolio, spent] = await Promise.all([readPortfolio(agent.walletPublicKey, prices), spentToday(agent.id)]);
-  const ctx: RiskContext = {
+export type Book = { totalUsd: number; positionsUsd: Record<string, number> };
+
+/** The agent's current book: its paper ledger, or its real on-chain wallet. */
+export async function getBook(agent: Agent, prices: Record<string, number>): Promise<Book> {
+  if (agent.paper) {
+    const fills = await db().select().from(decisions).where(eq(decisions.agentId, agent.id)).orderBy(asc(decisions.createdAt));
+    return paperPortfolio(agent.paperStartUsd, fills, prices);
+  }
+  return readPortfolio(agent.walletPublicKey, prices);
+}
+
+async function riskContext(agent: Agent, book: Book, asset?: string): Promise<RiskContext> {
+  return {
     now: Date.now(),
-    spentTodayUsd: spent,
-    portfolioValueUsd: portfolio.totalUsd,
-    positionUsd: asset ? (portfolio.positionsUsd[asset.toUpperCase()] ?? 0) : 0,
+    spentTodayUsd: await spentToday(agent.id),
+    portfolioValueUsd: book.totalUsd,
+    positionUsd: asset ? (book.positionsUsd[asset.toUpperCase()] ?? 0) : 0,
     globalKill: GLOBAL_KILL(),
   };
-  return { ctx, portfolio };
 }
 
 const priceMap = (signals: { asset: string; price: number }[]) =>
   Object.fromEntries(signals.map((s) => [s.asset, s.price]));
 
-async function carryOut(agent: Agent, proposal: Proposal, price: number) {
+type Outcome = Pick<Decision, "status" | "executedUsd" | "txSignature" | "error" | "fillUnits" | "fillPrice">;
+
+async function carryOut(agent: Agent, proposal: Proposal, price: number): Promise<Outcome> {
+  if (agent.paper) {
+    const fill = await paperFill(proposal, price);
+    return { status: "paper", executedUsd: proposal.sizeUsd, txSignature: null, error: null, fillUnits: fill.units, fillPrice: fill.price };
+  }
   const result = await executeProposal(proposal, loadAgentKeypair(agent.walletSecretEnc), price);
   if (result.kind === "executed") {
-    return { status: "executed" as const, executedUsd: proposal.sizeUsd, txSignature: result.signature, error: null };
+    return { status: "executed", executedUsd: proposal.sizeUsd, txSignature: result.signature, error: null, fillUnits: null, fillPrice: null };
   }
-  // Simulated: nothing moved, so it does not count toward the daily cap.
+  // Simulated only: nothing moved, so it does not count toward the daily cap.
   return {
-    status: result.error ? ("failed" as const) : ("simulated" as const),
+    status: result.error ? "failed" : "simulated",
     executedUsd: 0,
     txSignature: null,
     error: result.error ? `simulation failed: ${result.error}` : null,
+    fillUnits: null,
+    fillPrice: null,
   };
+}
+
+async function alert(agent: Agent, d: Decision) {
+  if (d.status === "logged") return;
+  const [owner] = await db().select({ chat: users.telegramChatId }).from(users).where(eq(users.id, agent.userId)).limit(1);
+  const what = d.proposal ? `${d.proposal.side} ${d.proposal.asset} $${d.proposal.sizeUsd}` : "no action";
+  const extra = d.status === "pending" ? " — awaiting your approval in Orca" : d.error ? ` — ${d.error}` : d.txSignature ? ` — tx ${d.txSignature}` : "";
+  await sendAlert(owner?.chat, `Orca · ${agent.name}: ${d.status.toUpperCase()} · ${what}${extra}`);
 }
 
 /** One agent cycle: signals -> strategy proposal -> Risk Engine -> (log | queue | execute). Always writes a Decision Record. */
 export async function runAgent(agent: Agent): Promise<Decision> {
   const { signals, source } = await buildSignals();
   const prices = priceMap(signals);
-  const { portfolio } = await riskContext(agent, prices);
-  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: agent.policy, positionsUsd: portfolio.positionsUsd });
+  const book = await getBook(agent, prices);
+  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: agent.policy, positionsUsd: book.positionsUsd });
 
   let verdict: Verdict = "log_only";
   let checks: Check[] = [];
-  let status: Decision["status"] = "logged";
-  let executedUsd = 0;
-  let txSignature: string | null = null;
-  let error: string | null = null;
+  let outcome: Outcome = { status: "logged", executedUsd: 0, txSignature: null, error: null, fillUnits: null, fillPrice: null };
 
   if (out.proposal) {
-    const { ctx } = await riskContext(agent, prices, out.proposal.asset);
-    const ev = evaluate(agent.policy, out.proposal, ctx);
+    const ev = evaluate(agent.policy, out.proposal, await riskContext(agent, book, out.proposal.asset));
     verdict = ev.verdict;
     checks = ev.checks;
-    if (ev.verdict === "reject") status = "rejected";
-    else if (ev.verdict === "needs_approval") status = "pending";
+    if (ev.verdict === "reject") outcome.status = "rejected";
+    else if (ev.verdict === "needs_approval") outcome.status = "pending";
     else if (ev.verdict === "allow") {
       try {
-        ({ status, executedUsd, txSignature, error } = await carryOut(agent, out.proposal, prices[out.proposal.asset]));
+        outcome = await carryOut(agent, out.proposal, prices[out.proposal.asset]);
       } catch (e) {
-        status = "failed";
-        error = e instanceof Error ? e.message : "execution error";
+        outcome = { ...outcome, status: "failed", error: e instanceof Error ? e.message : "execution error" };
       }
     }
   }
 
   const [row] = await db()
     .insert(decisions)
-    .values({
-      agentId: agent.id,
-      signalSource: source,
-      rationale: out.rationale,
-      citations: out.citations,
-      proposal: out.proposal,
-      verdict,
-      checks,
-      status,
-      executedUsd,
-      txSignature,
-      error,
-    })
+    .values({ agentId: agent.id, signalSource: source, rationale: out.rationale, citations: out.citations, proposal: out.proposal, verdict, checks, ...outcome })
     .returning();
+  await alert(agent, row);
   return row;
 }
 
@@ -104,8 +115,8 @@ export async function approveDecision(agent: Agent, decision: Decision): Promise
   if (decision.status !== "pending" || !decision.proposal) throw new Error("decision is not awaiting approval");
   const { signals } = await buildSignals();
   const prices = priceMap(signals);
-  const { ctx } = await riskContext(agent, prices, decision.proposal.asset);
-  const ev = evaluate(agent.policy, decision.proposal, ctx);
+  const book = await getBook(agent, prices);
+  const ev = evaluate(agent.policy, decision.proposal, await riskContext(agent, book, decision.proposal.asset));
 
   let patch: Partial<Decision>;
   if (ev.verdict === "reject") {
@@ -120,5 +131,24 @@ export async function approveDecision(agent: Agent, decision: Decision): Promise
     }
   }
   const [row] = await db().update(decisions).set(patch).where(eq(decisions.id, decision.id)).returning();
+  await alert(agent, row);
   return row;
+}
+
+/** Scheduled sweep: runs every agent once. One failing agent never stops the rest. */
+export async function runAllAgents() {
+  if (GLOBAL_KILL()) return { ran: 0, failed: 0, skipped: "global kill switch on" as const };
+  const all = await db().select().from(agents);
+  let ran = 0;
+  let failed = 0;
+  for (const agent of all) {
+    if (agent.policy.killSwitch) continue;
+    try {
+      await runAgent(agent);
+      ran++;
+    } catch {
+      failed++;
+    }
+  }
+  return { ran, failed, skipped: null };
 }

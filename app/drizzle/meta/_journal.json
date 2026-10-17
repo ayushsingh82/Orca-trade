@@ -15,6 +15,13 @@
       "when": 1792234599475,
       "tag": "0001_clever_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792237808047,
+      "tag": "0002_lean_talkback",
+      "breakpoints": true
     }
   ]
 }
