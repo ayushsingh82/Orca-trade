@@ -2,7 +2,7 @@ import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, decisions, users, type Agent, type Decision } from "@/db/schema";
 import { sendAlert } from "@/lib/alerts";
-import { GLOBAL_KILL } from "@/lib/exec/config";
+import { GLOBAL_KILL, PILOT_MAX_TRADE_USD } from "@/lib/exec/config";
 import { paperFill, paperPortfolio } from "@/lib/exec/paper";
 import { readPortfolio } from "@/lib/exec/portfolio";
 import { executeProposal } from "@/lib/exec/router";
@@ -43,6 +43,13 @@ async function riskContext(agent: Agent, book: Book, asset?: string): Promise<Ri
   };
 }
 
+/** Live agents are additionally clamped by the platform pilot cap, regardless of what their own policy says. */
+function effectivePolicy(agent: Agent) {
+  if (agent.paper || PILOT_MAX_TRADE_USD <= 0) return agent.policy;
+  const maxTradeUsd = Math.min(agent.policy.maxTradeUsd, PILOT_MAX_TRADE_USD);
+  return { ...agent.policy, maxTradeUsd, maxDailyUsd: Math.min(agent.policy.maxDailyUsd, PILOT_MAX_TRADE_USD * 4) };
+}
+
 const priceMap = (signals: { asset: string; price: number }[]) =>
   Object.fromEntries(signals.map((s) => [s.asset, s.price]));
 
@@ -81,14 +88,14 @@ export async function runAgent(agent: Agent): Promise<Decision> {
   const { signals, source } = await buildSignals();
   const prices = priceMap(signals);
   const book = await getBook(agent, prices);
-  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: agent.policy, positionsUsd: book.positionsUsd });
+  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: effectivePolicy(agent), positionsUsd: book.positionsUsd });
 
   let verdict: Verdict = "log_only";
   let checks: Check[] = [];
   let outcome: Outcome = { status: "logged", executedUsd: 0, txSignature: null, error: null, fillUnits: null, fillPrice: null };
 
   if (out.proposal) {
-    const ev = evaluate(agent.policy, out.proposal, await riskContext(agent, book, out.proposal.asset));
+    const ev = evaluate(effectivePolicy(agent), out.proposal, await riskContext(agent, book, out.proposal.asset));
     verdict = ev.verdict;
     checks = ev.checks;
     if (ev.verdict === "reject") outcome.status = "rejected";
@@ -116,7 +123,7 @@ export async function approveDecision(agent: Agent, decision: Decision): Promise
   const { signals } = await buildSignals();
   const prices = priceMap(signals);
   const book = await getBook(agent, prices);
-  const ev = evaluate(agent.policy, decision.proposal, await riskContext(agent, book, decision.proposal.asset));
+  const ev = evaluate(effectivePolicy(agent), decision.proposal, await riskContext(agent, book, decision.proposal.asset));
 
   let patch: Partial<Decision>;
   if (ev.verdict === "reject") {

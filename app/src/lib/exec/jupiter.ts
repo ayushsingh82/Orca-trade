@@ -1,4 +1,4 @@
-import { JUPITER_BASE } from "./config";
+import { JUPITER_BASE, PRIORITY_FEE_LAMPORTS } from "./config";
 
 export type JupiterQuote = {
   inputMint: string;
@@ -11,10 +11,17 @@ export type JupiterQuote = {
   [k: string]: unknown;
 };
 
+/** Jupiter's free tier rate-limits (429). Retry with backoff; any other error fails immediately. */
 async function jup<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${JUPITER_BASE}${path}`, { cache: "no-store", signal: AbortSignal.timeout(15_000), ...init });
-  if (!res.ok) throw new Error(`Jupiter ${res.status} on ${path.split("?")[0]}: ${(await res.text()).slice(0, 120)}`);
-  return (await res.json()) as T;
+  let lastError = "";
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(`${JUPITER_BASE}${path}`, { cache: "no-store", signal: AbortSignal.timeout(15_000), ...init });
+    if (res.ok) return (await res.json()) as T;
+    lastError = `Jupiter ${res.status} on ${path.split("?")[0]}: ${(await res.text()).slice(0, 120)}`;
+    if (res.status !== 429) break;
+    await new Promise((r) => setTimeout(r, 1_000 * 2 ** attempt));
+  }
+  throw new Error(lastError);
 }
 
 export function getQuote(args: { inputMint: string; outputMint: string; amount: bigint; slippageBps: number }) {
@@ -32,7 +39,13 @@ export async function buildSwapTransaction(quote: JupiterQuote, userPublicKey: s
   const r = await jup<{ swapTransaction: string }>("/swap", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quoteResponse: quote, userPublicKey, dynamicComputeUnitLimit: true }),
+    body: JSON.stringify({
+      quoteResponse: quote,
+      userPublicKey,
+      dynamicComputeUnitLimit: true,
+      // Optional fixed priority fee to land reliably under congestion.
+      ...(PRIORITY_FEE_LAMPORTS > 0 ? { prioritizationFeeLamports: PRIORITY_FEE_LAMPORTS } : {}),
+    }),
   });
   return r.swapTransaction;
 }
