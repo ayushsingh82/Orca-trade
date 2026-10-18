@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   telegramChatId: text("telegram_chat_id"),
   stripeCustomerId: text("stripe_customer_id").unique(),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  dodoSubscriptionId: text("dodo_subscription_id").unique(),
   referralCode: text("referral_code").unique(),
   /** Referral code of whoever invited this user. */
   referredBy: text("referred_by"),

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dodoEnabled } from "@/lib/billing/dodo";
 import { BillingButton } from "@/components/billing-buttons";
 import { UsdcPay } from "@/components/usdc-pay";
 import { PageHeader } from "@/components/page-header";
@@ -52,7 +53,12 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
                 {user.plan === p.id ? (
                   <span className="text-xs text-muted-foreground">Current plan</span>
                 ) : p.id === "free" ? null : (
-                  <BillingButton endpoint="/api/billing/checkout" body={{ plan: p.id }} label={`Upgrade to ${p.name}`} />
+                  <div className="flex flex-wrap gap-2">
+                    <BillingButton endpoint="/api/billing/checkout" body={{ plan: p.id }} label={`Upgrade to ${p.name}`} />
+                    {dodoEnabled() && (
+                      <BillingButton endpoint="/api/billing/dodo/checkout" body={{ plan: p.id }} label={`${p.name} via Dodo`} />
+                    )}
+                  </div>
                 )}
               </div>
             </section>

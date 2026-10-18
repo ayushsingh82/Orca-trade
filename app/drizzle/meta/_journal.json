@@ -43,6 +43,13 @@
       "when": 1792240599133,
       "tag": "0005_even_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792300408694,
+      "tag": "0006_bent_nicolaos",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ Orca can sell Pro and Teams three ways. This file compares them so the final cho
 
 ## Options
 
-| | Stripe (built) | Dodo Payments (not built) | USDC on Solana (built, never run live) |
+| | Stripe (built) | Dodo Payments (built, never run live) | USDC on Solana (built, never run live) |
 | --- | --- | --- | --- |
 | Model | Payment processor. You are the seller. | Merchant of record. Dodo is the legal seller. | Direct on-chain payment to your treasury wallet |
 | Sales tax / VAT | Yours to handle (Stripe Tax is an add-on) | Dodo collects and remits it | Yours to handle |
@@ -22,7 +22,7 @@ Orca can sell Pro and Teams three ways. This file compares them so the final cho
 - **Your users are crypto-native:** keep USDC as a second option. It cannot be your only one, because it has no automatic renewals.
 - They are not exclusive: the billing code is isolated, so a provider can be added next to the others.
 
-## If Dodo is chosen: what to build
+## Dodo: what was built (routes `/api/billing/dodo/{checkout,webhook}`)
 1. Create subscription products for Pro and Teams in the Dodo dashboard.
 2. `POST /api/billing/dodo/checkout`: create a checkout session with `client.checkoutSessions.create` (a `product_cart` and a `return_url`) and redirect to its `checkout_url`.
 3. `POST /api/billing/dodo/webhook`: verify with `client.webhooks.unwrap` on the raw body and the three `webhook-*` headers. Handle `subscription.active`, `subscription.renewed` (grant plan), and `subscription.cancelled`, `subscription.on_hold` (revoke or warn).

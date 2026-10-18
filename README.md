@@ -74,11 +74,11 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 | Modes | observe | observe, propose, autonomous | all |
 | Alerts | No | Telegram | Telegram |
 
-Limits are enforced server-side. Paid plans are sold through Stripe subscriptions (USDC payment is not built yet); prices are placeholders to validate. Orca will not take a cut of trades or a performance fee.
+Limits are enforced server-side. Paid plans are sold through Stripe or Dodo Payments subscriptions, or by USDC; prices are placeholders to validate. Orca will not take a cut of trades or a performance fee.
 
 ## Where the code comes from
 
-The intelligence layer is ported from [MarketMind](https://github.com/ayushsingh82/MarketMind), a read-only research app that never trades. Orca keeps its SoSoValue and SoDEX clients, news-impact and contradiction engine, and grounded-LLM pattern (in `app/src/lib/intel/`), then adds what MarketMind deliberately lacked: accounts, agents, a risk engine, paper trading and execution. Details in [`app/plan.md`](app/plan.md).
+The intelligence layer is ported from MarketMind, a read-only research app that never trades. Orca keeps its SoSoValue and SoDEX clients, news-impact and contradiction engine, and grounded-LLM pattern (in `app/src/lib/intel/`), then adds what MarketMind deliberately lacked: accounts, agents, a risk engine, paper trading and execution. Details in [`app/plan.md`](app/plan.md).
 
 ## Architecture
 
@@ -148,6 +148,7 @@ npm test                       # Risk Engine, strategies, paper ledger
 | `TELEGRAM_BOT_TOKEN` | Alerts (optional) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAMS` | Billing |
 | `PILOT_MAX_TRADE_USD` | Optional hard USD cap per trade on every live agent |
+| `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_PAYMENTS_ENV`, `DODO_PRODUCT_PRO`, `DODO_PRODUCT_TEAMS` | Billing through Dodo (optional, shows a second button) |
 | `TREASURY_WALLET` | Receives USDC subscription payments |
 | `JITO_TIP_LAMPORTS` | Optional: send swaps as tipped Jito bundles |
 | `EXECUTION_ENABLED=1` | Real on-chain sending (leave off until you are ready) |
