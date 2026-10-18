@@ -144,7 +144,7 @@ npm test                       # Risk Engine, strategies, paper ledger
 | `DATABASE_URL` | Neon Postgres connection string |
 | `AUTH_SECRET`, `AGENT_KEY_SECRET` | Sessions and agent-signer encryption (32+ chars each) |
 | `ANTHROPIC_API_KEY` or `OPENAI_BASE_URL` + `OPENAI_MODEL` + `OPENAI_API_KEY` | Ask Orca |
-| `CRON_SECRET` | Hourly agent runs (`vercel.json`) |
+| `CRON_SECRET` | Daily agent runs (`vercel.json`); Vercel Hobby allows daily crons only, so use Pro or an external scheduler for hourly |
 | `TELEGRAM_BOT_TOKEN` | Alerts (optional) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAMS` | Billing |
 | `PILOT_MAX_TRADE_USD` | Optional hard USD cap per trade on every live agent |

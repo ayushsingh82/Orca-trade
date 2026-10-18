@@ -37,7 +37,7 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 | M2 Agents | **Built** — `agents`/`decisions` schema, momentum + narrative-rotation strategies, runner, Decision log UI. Paper PnL not built (execution is quote+simulate by default) |
 | M3 Risk Engine + policy | **Done** — pure `evaluate()`, `parseProposal()`, policy validation with hard ceilings, global + per-agent kill switch, 24 passing tests |
 | M4 Solana execution | **Built** — wallet detection + fund flow, per-agent encrypted signer, Jupiter quote/swap, simulate-then-send, human approval with Risk Engine re-check. Sending is OFF unless `EXECUTION_ENABLED=1` |
-| M5 Autonomous + portfolio + alerts | **Built** — hourly cron sweep (`/api/cron/run-agents`, `CRON_SECRET`), portfolio page, Telegram alerts. Paper trading + PnL added (virtual $1,000 filled at real Jupiter quotes) |
+| M5 Autonomous + portfolio + alerts | **Built** — daily cron sweep (hourly needs Vercel Pro) (`/api/cron/run-agents`, `CRON_SECRET`), portfolio page, Telegram alerts. Paper trading + PnL added (virtual $1,000 filled at real Jupiter quotes) |
 | M6 Hardening | **Partly built** — `assertQuoteSane` price guard (tested, live-checked against Jupiter), 429 retry, priority-fee option, `PILOT_MAX_TRADE_USD` cap. Pyth Hermes now returns 401 without credentials, so the reference price is SoSoValue (independent of the DEX). Jito/MEV bundles not done |
 | M7 Billing | **Built** — Stripe subscription checkout, billing portal, signature-verified webhook mapping prices to plans. Untested without Stripe keys. USDC payment not built |
 | M8 Growth | **Built** — referral codes, opt-in `/leaderboard` (paper agents), opt-in shareable `/d/[id]` Decision Records. No referral rewards |

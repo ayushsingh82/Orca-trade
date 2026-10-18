@@ -2,48 +2,99 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, CreditCard, LayoutDashboard, MessageSquare, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
 import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/dashboard", label: "Opportunities", icon: LayoutDashboard },
-  { href: "/ask", label: "Ask Orca", icon: MessageSquare },
-  { href: "/agents", label: "Agents", icon: Bot },
-  { href: "/portfolio", label: "Portfolio", icon: Wallet },
-  { href: "/billing", label: "Billing", icon: CreditCard },
+const SECTIONS: { label: string; items: { href: string; label: string; tag: string }[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard", label: "Intelligence Board", tag: "00" },
+      { href: "/ask", label: "Ask Orca", tag: "01" },
+    ],
+  },
+  {
+    label: "Signals",
+    items: [
+      { href: "/news", label: "News Impact", tag: "10" },
+      { href: "/sectors", label: "Sectors", tag: "11" },
+      { href: "/flow", label: "SoDEX Flow", tag: "12" },
+      { href: "/indices", label: "Index & ETF", tag: "13" },
+    ],
+  },
+  {
+    label: "Trading",
+    items: [
+      { href: "/agents", label: "Agents", tag: "20" },
+      { href: "/portfolio", label: "Portfolio", tag: "21" },
+      { href: "/leaderboard", label: "Leaderboard", tag: "22" },
+    ],
+  },
+  { label: "Account", items: [{ href: "/billing", label: "Billing", tag: "30" }] },
 ];
+
+const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
 export function AppSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-6 border-r bg-background p-4 md:flex">
-      <BrandLogo />
-      <nav className="flex flex-col gap-1">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
-          return (
+    <>
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r bg-background p-4 md:flex">
+        <BrandLogo />
+        <nav className="flex flex-col gap-5">
+          {SECTIONS.map((section) => (
+            <div key={section.label}>
+              <p className="px-3 pb-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                {section.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {section.items.map(({ href, label, tag }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "flex items-center justify-between rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        active && "bg-muted text-foreground",
+                      )}
+                    >
+                      {label}
+                      <span className={cn("font-mono text-[10px]", active ? "text-accent" : "text-muted-foreground/60")}>{tag}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <div className="mt-auto flex flex-col gap-3">
+          <UserMenu />
+          <p className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">Live data. Paper trading by default.</p>
+        </div>
+      </aside>
+
+      <div className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur md:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <BrandLogo />
+          <UserMenu />
+        </div>
+        <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
+          {SECTIONS.flatMap((s) => s.items).map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                active && "bg-muted text-foreground",
+                "shrink-0 rounded-lg px-3 py-1.5 text-sm text-muted-foreground",
+                isActive(pathname, href) && "bg-muted text-foreground",
               )}
             >
-              <Icon className="size-4" />
               {label}
             </Link>
-          );
-        })}
-      </nav>
-      <div className="mt-auto">
-        <UserMenu />
+          ))}
+        </nav>
       </div>
-      <p className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-        Live data · observe mode. No funds at risk.
-      </p>
-    </aside>
+    </>
   );
 }
