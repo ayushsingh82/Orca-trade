@@ -108,7 +108,8 @@ Jupiter ───┘   (OrcaSignal)     (strategies)       └─► Risk Engine
 - **Price guard.** Before any paper fill or swap, the Jupiter quote must be within the trade's slippage plus 150bps of an independent reference price (SoSoValue). Worse quotes are refused.
 - **Approvals are re-checked.** Approving a queued trade re-runs the Risk Engine on fresh balances before anything swaps.
 - **Kill switches.** Per agent, and platform-wide with `ORCA_GLOBAL_KILL=1`.
-- **Known limit:** the server holds each agent signer's key. A Squads-based on-chain daily funding cap is designed and its instruction builders are written and tested, but it is not wired in or run on-chain yet. See [`docs/ONCHAIN_LIMITS.md`](docs/ONCHAIN_LIMITS.md).
+- **On-chain funding cap (optional).** A live agent can be linked to a Squads vault you control with one daily limit it can use. The Squads program, not Orca's server, then bounds how much the agent can ever pull; Orca re-verifies the vault on chain before every top-up. Squads limits cover transfers, not swaps, so this caps funding, not individual trades. Verified end to end on a local validator running the real Squads program; not yet run on mainnet. See [`docs/ONCHAIN_LIMITS.md`](docs/ONCHAIN_LIMITS.md).
+- **Known limit:** without a vault, the server holds each agent signer's key and exposure is what you fund it with plus the Risk Engine limits.
 - **Signal scoring is backtested, not proven.** `app/scripts/backtest.ts` showed 1-day momentum (the original driver) had a negative average, so direction now follows 7- and 14-day trend plus news. With ~450 daily observations nothing is statistically significant, and conviction is a ranking, not a probability.
 
 > Not financial advice. Trading is risky and you can lose money. Start with paper trading and small amounts.
@@ -158,7 +159,7 @@ Generate the secrets with `openssl rand -hex 32` (once each for `AUTH_SECRET`, `
 
 ### Not finished
 
-- The Squads on-chain daily funding cap: instruction builders are written and tested, but not wired into the app or run on-chain. Until then, an agent's exposure is what you fund it with plus the Risk Engine limits.
+- The Squads vault flow is verified on a local validator, but not on mainnet with real USDC, and the Agents-page UI has not been clicked through with a real wallet.
 - Nothing that needs a database, payment provider or funded wallet has been run end to end. The code is built and unit-tested; the first real run is yours.
 - SoDEX Flow shows "no data" when SoDEX returns an empty book.
 
@@ -185,6 +186,7 @@ npm test                       # Risk Engine, strategies, paper ledger
 | `PILOT_MAX_TRADE_USD` | Optional hard USD cap per trade on every live agent |
 | `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_PAYMENTS_ENV`, `DODO_PRODUCT_PRO`, `DODO_PRODUCT_TEAMS` | Billing through Dodo (optional, shows a second button) |
 | `TREASURY_WALLET` | Receives USDC subscription payments |
+| `SOLANA_RPC_URL`, `NEXT_PUBLIC_SOLANA_RPC` | A dedicated Solana RPC for the server and the browser (the public one is rate limited) |
 | `JITO_TIP_LAMPORTS` | Optional: send swaps as tipped Jito bundles |
 | `EXECUTION_ENABLED=1` | Real on-chain sending (leave off until you are ready) |
 

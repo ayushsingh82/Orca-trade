@@ -58,6 +58,11 @@ export const agents = pgTable("agents", {
   /** The agent's limited-authority signer. It only ever holds what the user funds it with. */
   walletPublicKey: text("wallet_public_key").notNull(),
   walletSecretEnc: text("wallet_secret_enc").notNull(),
+  /** Optional on-chain funding cap: a Squads vault the user controls plus one daily spending limit for this agent. */
+  squadsOwner: text("squads_owner"),
+  squadsMultisig: text("squads_multisig"),
+  squadsLimit: text("squads_limit"),
+  squadsDailyUsdc: doublePrecision("squads_daily_usdc"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

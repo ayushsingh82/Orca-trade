@@ -21,15 +21,51 @@ So Squads cannot cap individual trades.
 Result: the most a misbehaving agent or server can ever receive is the daily cap, enforced by the Squads program.
 The user can lower or remove the limit, or empty the vault, at any time because they are the config authority.
 
-## Built (`app/src/lib/exec/squads.ts`, tested structurally)
-- `buildVaultSetup`: the two instructions the user signs (create vault, add limit). The agent is not a signer, so
-  it cannot change its own limit.
-- `buildTopUp`: the agent's instructions to pull USDC from the vault into its wallet within the limit.
-- Tests check program ids, signer sets and input validation.
+## Built and verified
 
-## Not built / not verified
-- Nothing has been sent on-chain. The instruction builders are unit-tested, not exercised against a funded vault.
-- No UI for the user to sign the setup transaction, no database link between an agent and its vault, and the
-  runner does not yet top up from the vault before trading.
-- Reading the vault and limit back from chain to confirm the configuration before trusting it.
-- Recommendation: validate on devnet or with a tiny mainnet balance before relying on it.
+- `squads.ts`: `buildVaultSetup` (the transaction the user signs), `buildTopUp` (the agent's pull), `readLimitConfig`
+  and `verifyLimitConfig` (read the vault back from chain and prove the cap is real), `effectiveRemaining`.
+- `vault.ts`: `pullFromVault` re-reads and re-verifies the vault on every call, then pulls only the shortfall for a
+  trade. It fails closed if the limit or the vault balance cannot cover the trade, so a trade is never half-funded.
+- Database: `agents.squads_owner / squads_multisig / squads_limit / squads_daily_usdc` (migration `0007`).
+- API: `POST /api/agents/[id]/vault/setup` builds the unsigned transaction, `POST .../vault/confirm` links the vault
+  only after verifying it on chain, `DELETE .../vault/confirm` unlinks it.
+- UI: the Agents page has a "Create vault" flow for live agents, then shows the vault address and the active cap.
+- Runner: before a live buy, the agent is funded from the vault (`carryOut` in `agents/runner.ts`).
+
+### What was run against the real Squads program
+
+`app/scripts/squads-e2e.ts` runs the full flow on a local validator with the Squads v4 program cloned from devnet.
+It passed all checks:
+
+- a 1-of-1 vault and a 50/day limit are created on chain, and `verifyLimitConfig` accepts them;
+- it rejects a wrong owner, a lower promised cap and a different agent;
+- the agent pulls 30, then only the 20 shortfall, reaching the 50 cap;
+- Orca's planner refuses the next pull, and **the Squads program itself rejects an over-limit pull sent around Orca**;
+- a different wallet cannot draw on the agent's limit;
+- Orca refuses to fund when the on-chain limit is higher than the cap it recorded.
+
+Running it caught a real bug: the first version required a signature the program does not need, so the setup
+transaction could never have been sent.
+
+Run it yourself:
+
+```bash
+solana-test-validator --reset --url devnet \
+  --clone-upgradeable-program SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf \
+  --clone BSTq9w3kZwNwpBXJEvTZz2G9ZTNyKBvoSeXMvwb4cNZr
+cd app && npx tsx scripts/squads-e2e.ts
+```
+
+## Not verified
+
+- A local validator is not mainnet. The e2e uses a throwaway token in place of USDC; the code paths are the same,
+  but nothing has run with real USDC or through a browser wallet (Phantom signing the setup transaction).
+- The Agents-page UI and the two API routes have been type-checked and built, not clicked through. They need a
+  database and a wallet.
+- Squads charges a creation fee on mainnet (paid by the user's wallet in the setup transaction).
+- The risk engine's portfolio value for a vault-linked agent counts only the agent wallet, not the vault, so
+  concentration limits are measured against a smaller number (more conservative, never less).
+- Set `SOLANA_RPC_URL` (server) and `NEXT_PUBLIC_SOLANA_RPC` (browser) to a dedicated RPC for production; the
+  public endpoint is rate limited.
+- Recommendation: try it with a small amount first.

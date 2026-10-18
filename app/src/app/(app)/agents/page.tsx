@@ -6,6 +6,9 @@ import { ActionButton } from "@/components/agents/action-button";
 import { ToggleButton } from "@/components/agents/toggle-button";
 import { CreateAgentForm } from "@/components/agents/create-agent-form";
 import { FundAgent } from "@/components/agents/fund-agent";
+import { VaultSetup } from "@/components/agents/vault-setup";
+import { squadsAddresses } from "@/lib/exec/squads";
+import { PublicKey } from "@solana/web3.js";
 import { SolanaProviders } from "@/components/agents/wallet-provider";
 import { PageHeader } from "@/components/page-header";
 import { getUser } from "@/lib/auth/session";
@@ -72,6 +75,14 @@ export default async function AgentsPage() {
                 <>
                   <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground">Agent wallet: {a.walletPublicKey}</p>
                   <FundAgent address={a.walletPublicKey} />
+                  <VaultSetup
+                    agentId={a.id}
+                    linked={
+                      a.squadsMultisig && a.squadsDailyUsdc
+                        ? { vault: squadsAddresses(new PublicKey(a.squadsMultisig)).vault.toBase58(), dailyUsdc: a.squadsDailyUsdc }
+                        : null
+                    }
+                  />
                 </>
               )}
 

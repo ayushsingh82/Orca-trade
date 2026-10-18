@@ -50,6 +50,13 @@
       "when": 1792300408694,
       "tag": "0006_bent_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792319910812,
+      "tag": "0007_skinny_wild_child",
+      "breakpoints": true
     }
   ]
 }

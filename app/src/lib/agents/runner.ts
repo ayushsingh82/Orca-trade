@@ -1,13 +1,15 @@
+import { Connection } from "@solana/web3.js";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, decisions, users, type Agent, type Decision } from "@/db/schema";
 import { sendAlert } from "@/lib/alerts";
-import { GLOBAL_KILL, PILOT_MAX_TRADE_USD } from "@/lib/exec/config";
+import { EXECUTION_ENABLED, GLOBAL_KILL, PILOT_MAX_TRADE_USD, RPC_URL } from "@/lib/exec/config";
 import { paperFill, paperPortfolio } from "@/lib/exec/paper";
 import { resolveReferencePrice } from "@/lib/exec/reference";
 import { readPortfolio } from "@/lib/exec/portfolio";
 import { executeProposal } from "@/lib/exec/router";
 import { loadAgentKeypair } from "@/lib/exec/signer";
+import { pullFromVault, type VaultLink } from "@/lib/exec/vault";
 import { evaluate } from "@/lib/risk/engine";
 import type { Check, Proposal, RiskContext, Verdict } from "@/lib/risk/types";
 import { buildSignals } from "@/lib/signals";
@@ -56,6 +58,11 @@ const priceMap = (signals: { asset: string; price: number }[]) =>
 
 type Outcome = Pick<Decision, "status" | "executedUsd" | "txSignature" | "error" | "fillUnits" | "fillPrice">;
 
+export function vaultLink(agent: Agent): VaultLink | null {
+  if (!agent.squadsOwner || !agent.squadsMultisig || !agent.squadsLimit || !agent.squadsDailyUsdc) return null;
+  return { owner: agent.squadsOwner, multisig: agent.squadsMultisig, limit: agent.squadsLimit, dailyUsdc: agent.squadsDailyUsdc };
+}
+
 async function carryOut(agent: Agent, proposal: Proposal, primaryPrice: number): Promise<Outcome> {
   // Cross-check the SoSoValue price against CoinGecko. Live agents require the second source to be up.
   const price = await resolveReferencePrice(proposal.asset, primaryPrice, { requireSecond: !agent.paper });
@@ -63,7 +70,13 @@ async function carryOut(agent: Agent, proposal: Proposal, primaryPrice: number):
     const fill = await paperFill(proposal, price);
     return { status: "paper", executedUsd: proposal.sizeUsd, txSignature: null, error: null, fillUnits: fill.units, fillPrice: fill.price };
   }
-  const result = await executeProposal(proposal, loadAgentKeypair(agent.walletSecretEnc), price);
+  const signer = loadAgentKeypair(agent.walletSecretEnc);
+  // With a vault linked, the agent is funded just-in-time from it, so the on-chain daily limit is the most it can ever hold.
+  const link = vaultLink(agent);
+  if (link && proposal.side === "buy") {
+    await pullFromVault({ connection: new Connection(RPC_URL, "confirmed"), agent: signer, link, neededUsdc: proposal.sizeUsd, send: EXECUTION_ENABLED });
+  }
+  const result = await executeProposal(proposal, signer, price);
   if (result.kind === "executed") {
     return { status: "executed", executedUsd: proposal.sizeUsd, txSignature: result.signature, error: null, fillUnits: null, fillPrice: null };
   }
