@@ -1,5 +1,6 @@
 "use client";
 
+import { sourceLabel } from "@/lib/format";
 import { FormEvent, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { SourceBadge } from "@/components/source-badge";
@@ -53,7 +54,7 @@ export default function AskPage() {
     <>
       <PageHeader
         title="Ask Orca"
-        description="Cited answers grounded in live SoSoValue data. Contradictions are surfaced, not hidden."
+        description="Cited answers grounded in live data. Contradictions are surfaced, not hidden."
       />
       <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row">
         <input
@@ -112,7 +113,7 @@ export default function AskPage() {
               {analysis.evidence.map((e, i) => (
                 <li key={i}>
                   <span className="font-mono text-xs text-accent">{e.label}</span> {e.value}
-                  <span className="text-muted-foreground"> — {e.source}</span>
+                  <span className="text-muted-foreground"> — {sourceLabel(e.source)}</span>
                 </li>
               ))}
             </ul>
@@ -123,7 +124,7 @@ export default function AskPage() {
               <p className="mt-2 text-sm">{analysis.impact}</p>
             </section>
           )}
-          <ListCard title="Citations" items={analysis.citations.map((c) => `${c.title} — ${c.source}`)} />
+          <ListCard title="Citations" items={analysis.citations.map((c) => `${c.title} — ${sourceLabel(c.source)}`)} />
         </div>
       )}
     </>

@@ -1,13 +1,13 @@
 export type Series = { name: string; color: string; values: number[] };
 
 /** Dependency-free SVG line chart. Every series is plotted on one shared y-axis. */
-export function LineChart({ series, labels, height = 220 }: { series: Series[]; labels: [string, string]; height?: number }) {
+export function LineChart({ series, labels, height = 220, fixedRange }: { series: Series[]; labels: [string, string]; height?: number; fixedRange?: [number, number] }) {
   const w = 600;
   const pad = { l: 36, r: 8, t: 8, b: 20 };
   const all = series.flatMap((s) => s.values);
   if (all.length < 2) return <p className="text-sm text-muted-foreground">Not enough data to chart.</p>;
-  const lo = Math.min(...all);
-  const hi = Math.max(...all);
+  const lo = fixedRange ? fixedRange[0] : Math.min(...all);
+  const hi = fixedRange ? fixedRange[1] : Math.max(...all);
   const span = hi - lo || 1;
   const x = (i: number, n: number) => pad.l + (i / Math.max(n - 1, 1)) * (w - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - lo) / span) * (height - pad.t - pad.b);

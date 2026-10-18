@@ -35,6 +35,7 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 
 | You want to... | Orca gives you |
 | --- | --- |
+| Research a token's momentum | **RSI Research**: 14-period RSI on 1h, 4h, 24h and 7d for each tracked token, with zones, price changes, 1-year range position and a 7-day 1h RSI chart |
 | See what's worth attention right now | **Opportunities**: assets ranked by conviction, with direction, reasons, cited headlines and flagged contradictions |
 | Understand a move | **Signal detail** and **Ask Orca**: cited answers grounded in live data, with the evidence that disagrees shown, not hidden |
 | Automate a strategy | **Agents** from templates (Momentum, Narrative Rotation), each with its own limits |
@@ -142,7 +143,7 @@ Orca works in layers. Each layer needs a few more things, and you can stop at an
 | **USDC subscriptions** | A Solana wallet address you control | `TREASURY_WALLET` |
 | **Real on-chain trades** | A funded agent signer and an explicit opt-in | `EXECUTION_ENABLED=1` (leave unset until you are ready), optional `PILOT_MAX_TRADE_USD`, `JITO_TIP_LAMPORTS` |
 
-Jupiter, SoDEX and CoinGecko are read without a key.
+Jupiter, SoDEX and CoinGecko are read without a key. RSI Research uses CoinGecko's free tier, which is rate limited: the first cold load fetches about 10 price histories one at a time and can take 30 seconds or more. An optional free `COINGECKO_API_KEY` (a Demo key) makes it faster.
 
 Generate the secrets with `openssl rand -hex 32` (once each for `AUTH_SECRET`, `AGENT_KEY_SECRET` and `CRON_SECRET`). Keep a copy of `AGENT_KEY_SECRET`: if it is lost, every stored agent signer becomes unreadable.
 

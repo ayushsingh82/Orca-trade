@@ -18,7 +18,7 @@ const STEPS = [
   { icon: Brain, name: "Intelligence", text: "Live news, sector, flow and macro data become ranked, cited signals." },
   { icon: Bot, name: "Agents", text: "A strategy reads the signals and proposes a trade, or nothing." },
   { icon: Scale, name: "Risk Engine", text: "Deterministic code checks caps, slippage, conviction and contradictions." },
-  { icon: Rocket, name: "Execution", text: "A Jupiter swap on Solana, simulated first, sent only if you allow it." },
+  { icon: Rocket, name: "Execution", text: "A swap on Solana, simulated first, sent only if you allow it." },
 ];
 
 export function Pipeline() {
@@ -128,7 +128,7 @@ export function Pricing() {
 const FAQ = [
   ["Does Orca hold my funds?", "No. Your own wallet is never given to Orca. Each live agent has its own signer that holds only the amount you send it."],
   ["Can the AI trade on its own?", "Only in autonomous mode, only inside your limits, and only after the Risk Engine approves. Observe and propose modes never trade without you."],
-  ["Is the data real?", "Yes. Orca reads SoSoValue, SoDEX and Jupiter. If a source is unavailable you see an error, not a made-up number."],
+  ["Is the data real?", "Yes. Orca reads live market, news and on-chain quote data. If a source is unavailable you see an error, not a made-up number."],
   ["Do the signals make money?", "Not proven. Our own backtest found nothing statistically significant, so conviction is a ranking, not a probability. Use paper trading to test."],
   ["How do I pay?", "Card subscriptions, or USDC on Solana."],
 ];

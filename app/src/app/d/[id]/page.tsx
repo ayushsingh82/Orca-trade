@@ -1,3 +1,4 @@
+import { sourceLabel } from "@/lib/format";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -42,7 +43,7 @@ export default async function SharedDecision({ params }: PageProps<"/d/[id]">) {
           <ul className="mt-2 space-y-1.5 text-sm">
             {d.citations.map((c) => (
               <li key={c.id}>
-                {c.title} <span className="text-muted-foreground">— {c.source}</span>
+                {c.title} <span className="text-muted-foreground">— {sourceLabel(c.source)}</span>
               </li>
             ))}
           </ul>

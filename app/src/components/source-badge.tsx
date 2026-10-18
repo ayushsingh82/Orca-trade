@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
-/** Shows where a payload came from. Orca only serves live data, so this is provenance, not a mock flag. */
-export function SourceBadge({ source, className }: { source: string; className?: string }) {
+/** Orca only serves live data. The upstream provider is deliberately not shown in the UI. */
+export function SourceBadge({ className }: { source?: string; className?: string }) {
   return (
     <span
       className={cn(
@@ -10,7 +10,7 @@ export function SourceBadge({ source, className }: { source: string; className?:
       )}
     >
       <span className="size-1.5 rounded-full bg-emerald-400" />
-      live · {source}
+      Live data
     </span>
   );
 }

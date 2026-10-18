@@ -20,3 +20,13 @@ export function fmtAgo(ts: number, now = Date.now()) {
 }
 
 export const tone = (n: number) => (n > 0 ? "text-emerald-400" : n < 0 ? "text-red-400" : "text-muted-foreground");
+
+/** Display-safe label for a data source: provider names are not shown in the UI. */
+export function sourceLabel(s: string) {
+  return s
+    .replace(/SoSoValue\s*\/?\s*news/gi, "news feed")
+    .replace(/SoSoValue\s*\/?\s*sectors?/gi, "sector data")
+    .replace(/SoSoValue\s*\/?\s*macro/gi, "macro calendar")
+    .replace(/SoDEX\s*(taker|trades|flow)?/gi, "order flow")
+    .replace(/SoSoValue|CoinGecko|Jupiter/gi, "market data");
+}

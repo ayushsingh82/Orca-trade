@@ -32,7 +32,7 @@ const TONE = { default: "text-foreground", good: "text-emerald-400", bad: "text-
 
 export type PulseItem = { label: string; value: string; hint?: string; tone?: keyof typeof TONE };
 
-/** A horizontal strip of headline numbers, as on MarketMind's intelligence board. */
+/** A horizontal strip of headline numbers, for the intelligence board. */
 export function PulseRail({ items }: { items: PulseItem[] }) {
   return (
     <div className="mb-6 grid grid-cols-2 divide-x divide-y overflow-hidden rounded-xl border bg-card sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0">

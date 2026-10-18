@@ -1,3 +1,4 @@
+import { sourceLabel } from "@/lib/format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -51,8 +52,8 @@ export default async function SignalPage({ params }: PageProps<"/signals/[asset]
                     {c.title} <span className="text-xs uppercase">({c.severity})</span>
                   </p>
                   <p className="text-muted-foreground">
-                    {c.signalA.label}: {c.signalA.value} ({c.signalA.source}) vs {c.signalB.label}: {c.signalB.value} (
-                    {c.signalB.source})
+                    {c.signalA.label}: {c.signalA.value} ({sourceLabel(c.signalA.source)}) vs {c.signalB.label}: {c.signalB.value} (
+                    {sourceLabel(c.signalB.source)})
                   </p>
                 </li>
               ))}
@@ -67,7 +68,7 @@ export default async function SignalPage({ params }: PageProps<"/signals/[asset]
             <ul className="mt-2 space-y-1.5 text-sm">
               {signal.citations.map((c) => (
                 <li key={c.id}>
-                  {c.title} <span className="text-muted-foreground">— {c.source}</span>
+                  {c.title} <span className="text-muted-foreground">— {sourceLabel(c.source)}</span>
                 </li>
               ))}
             </ul>

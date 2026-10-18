@@ -31,7 +31,7 @@ export function Hero() {
           <div className={cn(card, "w-56")}>
             <Zap className="size-5 text-accent" />
             <p className="mt-3 text-sm font-medium">Paper trade first</p>
-            <p className="mt-1 text-xs text-muted-foreground">A virtual $1,000 filled at real Jupiter quotes.</p>
+            <p className="mt-1 text-xs text-muted-foreground">A virtual $1,000 filled at real market quotes.</p>
           </div>
         </Float>
         <Float className="right-[8%] bottom-[14%] -rotate-[4deg]" duration={8} delay={2}>

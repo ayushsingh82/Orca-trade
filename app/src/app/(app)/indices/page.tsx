@@ -27,7 +27,7 @@ export default async function IndicesPage() {
         <Panel
           title="Orca basket"
           subtitle="Market-cap weighted, single name capped. Computed from live prices; not an on-chain product."
-          right={idx.status === "fulfilled" ? <SourceBadge source={idx.value.source} /> : undefined}
+          right={idx.status === "fulfilled" ? <SourceBadge /> : undefined}
         >
           {idx.status === "fulfilled" ? (
             <>
@@ -56,7 +56,7 @@ export default async function IndicesPage() {
         </Panel>
 
         {etfs.map(({ label, res }) => (
-          <Panel key={label} title={label} subtitle="Daily net inflow, newest first" right={<SourceBadge source="SoSoValue/etf" />}>
+          <Panel key={label} title={label} subtitle="Daily net inflow, newest first" right={<SourceBadge />}>
             {res.status === "fulfilled" ? (
               <ul className="space-y-1.5 text-sm">
                 {[...res.value.data].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map((d) => (

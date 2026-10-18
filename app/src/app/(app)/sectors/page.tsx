@@ -21,7 +21,7 @@ export default async function SectorsPage() {
   return (
     <>
       <PageHeader title="Sectors" description="Where the market is rotating. Breadth shows whether a move is broad or narrow." />
-      <SourceBadge source="SoSoValue/sectors" className="-mt-4 mb-6" />
+      <SourceBadge className="-mt-4 mb-6" />
       <p className="mb-4 text-sm text-muted-foreground">
         {up} of {rows.length} sectors up in the last 24h.
       </p>

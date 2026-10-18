@@ -8,7 +8,7 @@ import { getOrderbook, getRecentTrades } from "@/lib/intel/sodex";
 // Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
-export const metadata = { title: "SoDEX Flow" };
+export const metadata = { title: "Order Flow" };
 
 const SYMBOLS = ["BTC", "ETH", "SOL"];
 
@@ -19,7 +19,7 @@ export default async function FlowPage() {
       try {
         const [ob, tr] = await Promise.all([getOrderbook(pair), getRecentTrades(pair, 60)]);
         if (!ob.data.bids.length && !ob.data.asks.length && !tr.data.length) {
-          return { symbol, ob: null, stats: null, count: 0, error: "SoDEX returned an empty order book and no recent trades" };
+          return { symbol, ob: null, stats: null, count: 0, error: "No order book or recent trades available right now" };
         }
         return { symbol, ob: ob.data, stats: takerBuyStats(tr.data), count: tr.data.length, error: null };
       } catch (e) {
@@ -28,12 +28,12 @@ export default async function FlowPage() {
     }),
   );
   if (results.every((r) => r.error)) {
-    return <ErrorCard title="Could not load SoDEX" message={results[0].error ?? "failed"} />;
+    return <ErrorCard title="Could not load order flow" message={results[0].error ?? "failed"} />;
   }
   return (
     <>
-      <PageHeader title="SoDEX Flow" description="Order book and taker flow from recent trades. Shows who is lifting offers and who is hitting bids." />
-      <SourceBadge source="SoDEX spot" className="-mt-4 mb-6" />
+      <PageHeader title="Order Flow" description="Order book and taker flow from recent trades. Shows who is lifting offers and who is hitting bids." />
+      <SourceBadge className="-mt-4 mb-6" />
       <div className="grid gap-4 md:grid-cols-3">
         {results.map((r) => (
           <section key={r.symbol} className="rounded-xl border bg-card p-5">
