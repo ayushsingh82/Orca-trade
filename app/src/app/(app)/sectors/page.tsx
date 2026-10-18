@@ -4,6 +4,8 @@ import { SourceBadge } from "@/components/source-badge";
 import { fmtPct, fmtUsd, tone } from "@/lib/format";
 import { getSectorSpotlight } from "@/lib/intel/sosovalue";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sectors" };
 

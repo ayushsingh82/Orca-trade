@@ -123,9 +123,43 @@ Jupiter ───┘   (OrcaSignal)     (strategies)       └─► Risk Engine
 | M3 Risk Engine | Done, tested |
 | M4 Solana execution: Jupiter, agent signer, approvals | Built; live sending off by default |
 | M5 Scheduling, portfolio page, Telegram alerts | Built; scheduler needs `CRON_SECRET` |
-| M6 Hardening: price guard against an independent reference, 429 retry, priority fee option, mainnet pilot cap | Built: price guard (live-tested), Jito bundle sending (tx build verified against Jupiter and Jito; sending untested). Not done: Pyth |
+| M6 Hardening: price guard against an independent reference, 429 retry, priority fee option, mainnet pilot cap | Built: price guard (live-tested), Jito bundle sending (tx build verified against Jupiter and Jito; sending untested). CoinGecko is the second price source instead of Pyth |
 | M7 Billing: Stripe checkout, portal, webhook, billing page | Built; Stripe needs keys and prices; USDC payments verified on-chain (logic tested, never run live) |
 | M8 Growth: referral links, opt-in public leaderboard, shareable Decision Records | Built; referral rewards (30 days of Pro per paying referral, max 12) need the database to run |
+
+## What you need
+
+Orca works in layers. Each layer needs a few more things, and you can stop at any one.
+
+| To get | You need | Variables |
+| --- | --- | --- |
+| **Live board, signals, news, sectors, index and ETF flows** (no login) | A SoSoValue API key | `SOSO_API_KEY` |
+| **Ask Orca** | An Anthropic key, or any OpenAI-compatible endpoint | `ANTHROPIC_API_KEY`, or `OPENAI_BASE_URL` + `OPENAI_MODEL` + `OPENAI_API_KEY` |
+| **Accounts, agents, paper trading, portfolio, decision log, leaderboard** | A Postgres database (Neon) and two random secrets | `DATABASE_URL`, `AUTH_SECRET`, `AGENT_KEY_SECRET` |
+| **Scheduled agent runs** | A secret the scheduler sends | `CRON_SECRET` |
+| **Telegram alerts** | A bot from @BotFather | `TELEGRAM_BOT_TOKEN` |
+| **Card subscriptions** | Stripe, Dodo Payments, or both | Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAMS`. Dodo: `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_PAYMENTS_ENV`, `DODO_PRODUCT_PRO`, `DODO_PRODUCT_TEAMS` |
+| **USDC subscriptions** | A Solana wallet address you control | `TREASURY_WALLET` |
+| **Real on-chain trades** | A funded agent signer and an explicit opt-in | `EXECUTION_ENABLED=1` (leave unset until you are ready), optional `PILOT_MAX_TRADE_USD`, `JITO_TIP_LAMPORTS` |
+
+Jupiter, SoDEX and CoinGecko are read without a key.
+
+Generate the secrets with `openssl rand -hex 32` (once each for `AUTH_SECRET`, `AGENT_KEY_SECRET` and `CRON_SECRET`). Keep a copy of `AGENT_KEY_SECRET`: if it is lost, every stored agent signer becomes unreadable.
+
+### Deploying to Vercel
+
+1. Import the repo and set the **Root Directory** to `app`.
+2. Add the variables above. Mark keys, tokens and `DATABASE_URL` as **Secret**; prices, product ids, the treasury address and similar can be **Config**.
+3. Add the Neon integration (it sets `DATABASE_URL`), then run `npx drizzle-kit migrate` once against it. Nothing creates the tables automatically.
+4. The cron in `app/vercel.json` runs once a day, because Vercel Hobby allows nothing more frequent. For hourly runs use Vercel Pro, or call `/api/cron/run-agents` from an external scheduler with `Authorization: Bearer <CRON_SECRET>`.
+5. SoSoValue's demo plan allows 10 requests a minute, so the first load of a cold instance can take up to a minute. Data pages allow up to 60 seconds and show a loading skeleton meanwhile.
+6. Stripe and Dodo webhooks point at `/api/billing/webhook` and `/api/billing/dodo/webhook`.
+
+### Not finished
+
+- The Squads on-chain daily funding cap: instruction builders are written and tested, but not wired into the app or run on-chain. Until then, an agent's exposure is what you fund it with plus the Risk Engine limits.
+- Nothing that needs a database, payment provider or funded wallet has been run end to end. The code is built and unit-tested; the first real run is yours.
+- SoDEX Flow shows "no data" when SoDEX returns an empty book.
 
 ## Run it
 

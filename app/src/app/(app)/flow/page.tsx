@@ -5,6 +5,8 @@ import { fmtUsd } from "@/lib/format";
 import { takerBuyStats, toSodexPair } from "@/lib/intel/analytics";
 import { getOrderbook, getRecentTrades } from "@/lib/intel/sodex";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 export const metadata = { title: "SoDEX Flow" };
 

@@ -4,6 +4,8 @@ import { SourceBadge } from "@/components/source-badge";
 import { fmtAgo, fmtPct, tone } from "@/lib/format";
 import { buildLiveNewsImpacts } from "@/lib/intel/marketmind";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 export const metadata = { title: "News Impact" };
 

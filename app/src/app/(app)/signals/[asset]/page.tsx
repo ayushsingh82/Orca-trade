@@ -7,6 +7,8 @@ import { ErrorCard } from "@/components/error-card";
 import { getSignal } from "@/lib/signals";
 import { cn } from "@/lib/utils";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export default async function SignalPage({ params }: PageProps<"/signals/[asset]">) {

@@ -11,6 +11,8 @@ import { LineChart } from "@/components/line-chart";
 import { buildSignals } from "@/lib/signals";
 import { cn } from "@/lib/utils";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const DIRECTION_STYLE = {

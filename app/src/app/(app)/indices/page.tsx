@@ -6,6 +6,8 @@ import { fmtPct, fmtUsd, tone } from "@/lib/format";
 import { getEtfFlows } from "@/lib/intel/sosovalue";
 import { buildMarketMindIndex } from "@/lib/intel/ssi";
 
+// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Index & ETF" };
 
