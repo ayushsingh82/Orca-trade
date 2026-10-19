@@ -2,11 +2,12 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand";
 
 const LINKS = [
-  { href: "#how", label: "How it works" },
-  { href: "#features", label: "Features" },
-  { href: "#safety", label: "Safety" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/markets", label: "Markets" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#features", label: "Research" },
+  { href: "/#agents", label: "Agents" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function Navbar() {

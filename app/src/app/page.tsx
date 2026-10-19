@@ -1,7 +1,7 @@
 import { Footer } from "@/components/site/footer";
 import { Hero } from "@/components/site/hero";
 import { Navbar } from "@/components/site/navbar";
-import { Cta, Faq, Features, Pipeline, Pricing, Safety } from "@/components/site/sections";
+import { Agents, Cta, Faq, Journey, Money, Pricing, Research, Safety, Stats } from "@/components/site/sections";
 
 export default function Home() {
   return (
@@ -9,8 +9,11 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <Pipeline />
-        <Features />
+        <Stats />
+        <Journey />
+        <Research />
+        <Agents />
+        <Money />
         <Safety />
         <Pricing />
         <Faq />

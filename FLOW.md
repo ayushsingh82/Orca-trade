@@ -24,11 +24,13 @@ Sign up ─► Wallet created ─► Fund wallet ─► Create agent ─► Fund
 - Status: balances **built and run**. Add funds **built, untested** (Privy).
 
 ## 4. Explore before risking money
+- **Markets**: the top 50 and the main Solana tokens, search across every listed coin, sort and filter, and follow tokens. Each token page shows price, change, market cap, a 7-day chart, RSI on four timeframes, and whether agents can trade it.
 - **Intelligence Board**, **News Impact**, **Sectors**, **Order Flow**, **Index & ETF** and **RSI Research** need no login and show live data.
 - **Ask Orca** answers questions with cited evidence (needs an LLM key).
 - Status: **built and run**, except Ask Orca (needs a key).
 
 ## 5. Create an agent
+- Choose which tokens the agent may trade. Only a reviewed list of Solana tokens is offered; large caps are selected by default and memecoins are an explicit, marked opt-in.
 - Pick **Add and run** on a starter agent (Momentum Scout, News Rotator, RSI Dip Watcher), or build one: strategy, mode and limits.
 - Starter agents are paper agents in observe mode. They read live data and report what they would do, even when they take no action.
 - **Free** plan: up to 3 agents, paper and observe only. **Pro**: live agents with propose and autonomous modes.

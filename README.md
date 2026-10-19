@@ -39,11 +39,12 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 
 | You want to... | Orca gives you |
 | --- | --- |
-| Research a token's momentum | **RSI Research**: 14-period RSI on 1h, 4h, 24h and 7d for each tracked token, with zones, price changes, 1-year range position and a 7-day 1h RSI chart |
+| Browse and search tokens | **Markets**: the top 50 and the main Solana ecosystem tokens (price, 1h/24h/7d change, market cap, volume, 7-day chart), search across every listed coin, sort and filter, and follow the ones you care about |
+| Research a token's momentum | **RSI Research**: 14-period RSI on 1h, 4h, 24h and 7d for the tracked tokens and for any token you open, with zones, price changes, 1-year range position and a 7-day 1h RSI chart |
 | See what's worth attention right now | **Opportunities**: assets ranked by conviction, with direction, reasons, cited headlines and flagged contradictions |
 | Understand a move | **Signal detail** and **Ask Orca**: cited answers grounded in live data, with the evidence that disagrees shown, not hidden |
 | Get started in one click | **Starter agents**: Momentum Scout, News Rotator and RSI Dip Watcher. Each is a paper agent in observe mode that runs on live data straight away and reports what it would do |
-| Automate a strategy | **Agents** from templates (Momentum, Narrative Rotation, RSI Reversion), each with its own limits |
+| Automate a strategy | **Agents** from templates (Momentum, Narrative Rotation, RSI Reversion), each with its own limits and **its own choice of tokens** from a reviewed list of 14 tradable Solana tokens (large caps by default, memecoins opt-in and marked high risk) |
 | Trust before you risk money | **Paper trading**: a virtual $1,000 filled at real Jupiter quotes, with live PnL |
 | Stay in control | Three modes per agent: **observe** (log only), **propose** (you approve each trade), **autonomous** (acts within limits) |
 | Fund it | **Wallet**: every new user gets their own Solana wallet at sign-up (through Privy), shows balances, can be funded by card or crypto, and can fund an agent in one step |
