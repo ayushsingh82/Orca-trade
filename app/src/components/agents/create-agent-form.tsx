@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ErrorCard } from "@/components/error-card";
+import { TokenPicker } from "@/components/agents/token-picker";
+import { CORE_SYMBOLS } from "@/lib/exec/mints";
 
 const STRATEGIES = [
   { id: "momentum", label: "Momentum", hint: "Follow the strongest directional signal" },
@@ -20,6 +22,7 @@ export function CreateAgentForm() {
   const [maxDailyUsd, setMaxDailyUsd] = useState(100);
   const [minConviction, setMinConviction] = useState(60);
   const [paper, setPaper] = useState(true);
+  const [assets, setAssets] = useState<string[]>(CORE_SYMBOLS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +31,11 @@ export function CreateAgentForm() {
     setBusy(true);
     setError(null);
     try {
+      if (assets.length === 0) throw new Error("Select at least one token");
       const res = await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, strategy, paper, policy: { mode, maxTradeUsd, maxDailyUsd, minConviction } }),
+        body: JSON.stringify({ name, strategy, paper, policy: { mode, maxTradeUsd, maxDailyUsd, minConviction, allowedAssets: assets } }),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error);
@@ -81,6 +85,7 @@ export function CreateAgentForm() {
           <input type="number" min={0} max={100} value={minConviction} onChange={(e) => setMinConviction(Number(e.target.value))} className={field} />
         </label>
       </div>
+      <TokenPicker value={assets} onChange={setAssets} />
       <label className="flex items-center gap-2 text-xs text-muted-foreground">
         <input type="checkbox" checked={paper} onChange={(e) => setPaper(e.target.checked)} />
         Paper trading (virtual $1,000 at real quoted prices; no funds at risk)

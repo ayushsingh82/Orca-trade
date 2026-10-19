@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { and, eq } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
+import { db } from "@/db";
+import { watchlist } from "@/db/schema";
 import { LineChart } from "@/components/line-chart";
+import { WatchStar } from "@/components/markets/watch-star";
 import { Panel } from "@/components/panel";
 import { RsiBadge, RsiGauge, ZONE_LABEL } from "@/components/rsi";
 import { SourceBadge } from "@/components/source-badge";
+import { getUser } from "@/lib/auth/session";
 import { fmtPct, tone } from "@/lib/format";
 import { researchCoin, TIMEFRAMES, type TokenResearch } from "@/lib/research";
 import { getMarketsByIds } from "@/lib/tokens/markets";
@@ -25,6 +30,9 @@ export default async function TokenPage({ params }: PageProps<"/markets/[id]">) 
   if (!/^[a-z0-9][a-z0-9-]{0,80}$/.test(id)) notFound();
   const [row] = await getMarketsByIds([id]).catch(() => []);
   if (!row) notFound();
+
+  const user = await getUser();
+  const followed = user ? (await db().select().from(watchlist).where(and(eq(watchlist.userId, user.id), eq(watchlist.coinId, row.id))).limit(1)).length > 0 : false;
 
   // RSI needs two longer price-history calls, so a failure shows a note instead of breaking the page.
   let research: TokenResearch | null = null;
@@ -49,6 +57,7 @@ export default async function TokenPage({ params }: PageProps<"/markets/[id]">) 
           <div>
             <h1 className="flex items-center gap-2 font-display text-3xl font-semibold tracking-tight">
               {row.name} <span className="text-xl text-muted-foreground">{row.symbol}</span>
+              <WatchStar id={row.id} symbol={row.symbol} name={row.name} initial={followed} loggedIn={Boolean(user)} />
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">{row.rank ? `Rank #${row.rank}` : "Unranked"}{row.isStable ? " · stablecoin" : ""}</p>
           </div>

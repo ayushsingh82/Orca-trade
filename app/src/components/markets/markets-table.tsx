@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Sparkline } from "@/components/markets/sparkline";
+import { WatchStar } from "@/components/markets/watch-star";
 import type { MarketRow } from "@/lib/tokens/markets";
 import { cn } from "@/lib/utils";
 
@@ -18,11 +19,12 @@ function Pct({ v }: { v: number | null }) {
 }
 
 /** Sortable, filterable token table. Sorting and filtering happen in the browser on the rows already loaded. */
-export function MarketsTable({ rows }: { rows: MarketRow[] }) {
+export function MarketsTable({ rows, watched, loggedIn }: { rows: MarketRow[]; watched: string[]; loggedIn: boolean }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const [filter, setFilter] = useState("");
   const [hideStables, setHideStables] = useState(true);
   const [onlyTradable, setOnlyTradable] = useState(false);
+  const watchedSet = useMemo(() => new Set(watched), [watched]);
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -55,6 +57,7 @@ export function MarketsTable({ rows }: { rows: MarketRow[] }) {
         <table className="w-full min-w-[860px] text-sm">
           <thead className="text-muted-foreground">
             <tr className="text-left">
+              <th className="w-8 p-3" />
               {head("#", "rank", false)}
               <th className="p-3 font-mono text-[10px] uppercase tracking-[0.15em]">Token</th>
               {head("Price", "price")}
@@ -69,6 +72,9 @@ export function MarketsTable({ rows }: { rows: MarketRow[] }) {
           <tbody>
             {shown.map((r) => (
               <tr key={r.id} className="border-t transition-colors hover:bg-muted">
+                <td className="p-3">
+                  <WatchStar id={r.id} symbol={r.symbol} name={r.name} initial={watchedSet.has(r.id)} loggedIn={loggedIn} />
+                </td>
                 <td className="p-3 font-mono text-xs text-muted-foreground">{r.rank ?? "—"}</td>
                 <td className="p-3">
                   <Link href={`/markets/${r.id}`} className="flex items-center gap-2.5 hover:text-accent">
@@ -90,7 +96,7 @@ export function MarketsTable({ rows }: { rows: MarketRow[] }) {
             ))}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={9} className="p-8 text-center text-sm text-muted-foreground">Nothing matches. Try clearing the filters, or search all tokens above.</td>
+                <td colSpan={10} className="p-8 text-center text-sm text-muted-foreground">Nothing matches. Try clearing the filters, or search all tokens above.</td>
               </tr>
             )}
           </tbody>

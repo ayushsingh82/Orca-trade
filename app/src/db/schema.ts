@@ -116,6 +116,23 @@ export const agentTransfers = pgTable("agent_transfers", {
 });
 export type AgentTransfer = typeof agentTransfers.$inferSelect;
 
+/** Tokens a user is following, any coin CoinGecko lists (not only tradable ones). */
+export const watchlist = pgTable(
+  "watchlist",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** CoinGecko id, e.g. "bonk". */
+    coinId: text("coin_id").notNull(),
+    symbol: text("symbol").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.coinId] })],
+);
+export type WatchlistItem = typeof watchlist.$inferSelect;
+
 export type Agent = typeof agents.$inferSelect;
 export type Decision = typeof decisions.$inferSelect;
 

@@ -71,6 +71,13 @@
       "when": 1792408845530,
       "tag": "0009_sloppy_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792411525750,
+      "tag": "0010_tan_tyrannus",
+      "breakpoints": true
     }
   ]
 }
