@@ -7,6 +7,7 @@ import { ToggleButton } from "@/components/agents/toggle-button";
 import { CreateAgentForm } from "@/components/agents/create-agent-form";
 import { FundAgent } from "@/components/agents/fund-agent";
 import { StarterAgents } from "@/components/agents/starter-agents";
+import { FundFromOrcaWallet } from "@/components/agents/fund-from-orca-wallet";
 import { VaultSetup } from "@/components/agents/vault-setup";
 import { squadsAddresses } from "@/lib/exec/squads";
 import { PublicKey } from "@solana/web3.js";
@@ -78,6 +79,7 @@ export default async function AgentsPage() {
               {!a.paper && (
                 <>
                   <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground">Agent wallet: {a.walletPublicKey}</p>
+                  {process.env.NEXT_PUBLIC_PRIVY_APP_ID && user.wallet && <FundFromOrcaWallet fromAddress={user.wallet} agentAddress={a.walletPublicKey} />}
                   <FundAgent address={a.walletPublicKey} />
                   <VaultSetup
                     agentId={a.id}

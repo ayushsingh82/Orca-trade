@@ -5,8 +5,10 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").unique(),
   passwordHash: text("password_hash"),
-  /** Base58 Solana public key. */
+  /** Base58 Solana public key. For Privy users this is their embedded wallet. */
   wallet: text("wallet").unique(),
+  /** Privy DID (did:privy:...). Set for users who signed in through Privy. */
+  privyId: text("privy_id").unique(),
   plan: text("plan", { enum: ["free", "pro", "teams"] }).notNull().default("free"),
   /** Telegram chat id for alerts (optional). */
   telegramChatId: text("telegram_chat_id"),

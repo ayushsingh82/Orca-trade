@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { referralRewards, users } from "@/db/schema";
 import { grantReferralReward, MAX_REWARDS_PER_REFERRER, REFERRAL_REWARD_DAYS } from "@/lib/billing/rewards";
 import { consume, refund, used } from "@/lib/entitlements";
+import { upsertPrivyUser } from "@/lib/auth/privy";
 
 const local = /^postgres(ql)?:\/\/[^@]*@?(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL ?? "");
 const created: string[] = [];
@@ -98,5 +99,45 @@ describe("db integration", { skip: !local && "needs a local DATABASE_URL" }, () 
     await grantReferralReward(u.id);
     const rows = await db().select().from(referralRewards).where(eq(referralRewards.referrerId, u.id));
     assert.equal(rows.length, 0);
+  });
+
+  describe("privy sign-in", () => {
+    const uid = () => `did:privy:${randomUUID()}`;
+    const track = (id: string) => created.push(id);
+
+    it("creates a user with the embedded wallet, then returns the same user next time", async () => {
+      const identity = { privyId: uid(), email: `${randomUUID()}@it.test`, wallet: randomUUID().replace(/-/g, "") };
+      const a = await upsertPrivyUser(identity);
+      track(a.id);
+      assert.equal(a.wallet, identity.wallet);
+      assert.equal(a.plan, "free");
+      assert.equal((await upsertPrivyUser(identity)).id, a.id);
+    });
+
+    it("links an existing password account by verified email instead of duplicating it", async () => {
+      const existing = await makeUser();
+      const linked = await upsertPrivyUser({ privyId: uid(), email: existing.email, wallet: randomUUID().replace(/-/g, "") });
+      assert.equal(linked.id, existing.id);
+      assert.ok(linked.privyId);
+      assert.ok(linked.wallet);
+    });
+
+    it("never takes a wallet that belongs to a different user", async () => {
+      const owner = await makeUser({ wallet: randomUUID().replace(/-/g, "") });
+      const other = await makeUser();
+      const result = await upsertPrivyUser({ privyId: uid(), email: other.email, wallet: owner.wallet });
+      // The wallet already maps to `owner`, so that account is the match; `other` keeps its own data untouched.
+      assert.equal(result.id, owner.id);
+      const [o] = await db().select().from(users).where(eq(users.id, other.id));
+      assert.equal(o.wallet, null);
+      assert.equal(o.privyId, null);
+    });
+
+    it("credits the referrer for a new Privy sign-up", async () => {
+      const referrer = await makeUser();
+      const u = await upsertPrivyUser({ privyId: uid(), email: `${randomUUID()}@it.test`, wallet: randomUUID().replace(/-/g, "") }, referrer.referralCode ?? undefined);
+      track(u.id);
+      assert.equal(u.referredBy, referrer.referralCode);
+    });
   });
 });

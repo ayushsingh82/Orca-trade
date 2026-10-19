@@ -33,7 +33,13 @@ const SECTIONS: { label: string; items: { href: string; label: string; tag: stri
       // { href: "/leaderboard", label: "Leaderboard", tag: "22" },
     ],
   },
-  { label: "Account", items: [{ href: "/billing", label: "Billing", tag: "30" }] },
+  {
+    label: "Account",
+    items: [
+      { href: "/wallet", label: "Wallet", tag: "30" },
+      { href: "/billing", label: "Billing", tag: "31" },
+    ],
+  },
 ];
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);

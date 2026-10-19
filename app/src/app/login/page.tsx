@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import bs58 from "bs58";
 import { BrandLogo } from "@/components/brand";
 import { ErrorCard } from "@/components/error-card";
+import { PRIVY_APP_ID } from "@/components/privy-provider";
+import { PrivyLogin } from "@/components/privy-login";
 
 type SolanaProvider = {
   connect: () => Promise<{ publicKey: { toString(): string } }>;
@@ -73,6 +75,14 @@ export default function LoginPage() {
         <h1 className="font-display text-3xl font-semibold tracking-tight">
           {mode === "login" ? "Sign in" : "Create account"}
         </h1>
+        {PRIVY_APP_ID && (
+          <>
+            <PrivyLogin refCode={typeof window === "undefined" ? undefined : refCode()} />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" /> other ways to sign in <span className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        )}
         <button
           onClick={onWallet}
           disabled={busy}

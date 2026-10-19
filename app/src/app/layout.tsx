@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
+import { PrivyAuthProvider } from "@/components/privy-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        {children}
+        <PrivyAuthProvider>{children}</PrivyAuthProvider>
       </body>
     </html>
   );

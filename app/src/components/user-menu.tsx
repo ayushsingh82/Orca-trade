@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { usePrivyLogout } from "@/components/privy-provider";
 
 type Me = { email: string | null; wallet: string | null; plan: string } | null;
 
 export function UserMenu() {
   const router = useRouter();
+  const privyLogout = usePrivyLogout();
   const [me, setMe] = useState<Me | undefined>(undefined);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export function UserMenu() {
       <button
         onClick={async () => {
           await fetch("/api/auth/logout", { method: "POST" });
+          await privyLogout().catch(() => {});
           router.push("/");
           router.refresh();
         }}

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="app/public/logo-wordmark-dark.svg" alt="Orca" height="72" />
+</p>
+
 # Orca
 
 **AI trading agents that show their work, and act on Solana only inside limits you set.**
@@ -38,9 +42,11 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 | Research a token's momentum | **RSI Research**: 14-period RSI on 1h, 4h, 24h and 7d for each tracked token, with zones, price changes, 1-year range position and a 7-day 1h RSI chart |
 | See what's worth attention right now | **Opportunities**: assets ranked by conviction, with direction, reasons, cited headlines and flagged contradictions |
 | Understand a move | **Signal detail** and **Ask Orca**: cited answers grounded in live data, with the evidence that disagrees shown, not hidden |
-| Automate a strategy | **Agents** from templates (Momentum, Narrative Rotation), each with its own limits |
+| Get started in one click | **Starter agents**: Momentum Scout, News Rotator and RSI Dip Watcher. Each is a paper agent in observe mode that runs on live data straight away and reports what it would do |
+| Automate a strategy | **Agents** from templates (Momentum, Narrative Rotation, RSI Reversion), each with its own limits |
 | Trust before you risk money | **Paper trading**: a virtual $1,000 filled at real Jupiter quotes, with live PnL |
 | Stay in control | Three modes per agent: **observe** (log only), **propose** (you approve each trade), **autonomous** (acts within limits) |
+| Fund it | **Wallet**: every new user gets their own Solana wallet at sign-up (through Privy), shows balances, can be funded by card or crypto, and can fund an agent in one step |
 | Know what happened | **Decision log** (full record per run), **Portfolio** (value, positions, PnL) and **Telegram alerts** |
 
 ### How an agent decides
@@ -71,7 +77,7 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 | | Free | Pro (~$29/mo) | Teams (~$199/mo) |
 | --- | --- | --- | --- |
 | Ask Orca | 5 / day | 100 / day | Unlimited (fair use) |
-| Agents | 1, paper and observe only | 5, live execution | 25 |
+| Agents | 3, paper and observe only | 5, live execution | 25 |
 | Modes | observe | observe, propose, autonomous | all |
 | Alerts | No | Telegram | Telegram |
 
@@ -127,7 +133,7 @@ Jupiter ───┘   (OrcaSignal)     (strategies)       └─► Risk Engine
 | M5 Scheduling, portfolio page, Telegram alerts | Built; scheduler needs `CRON_SECRET` |
 | M6 Hardening: price guard against an independent reference, 429 retry, priority fee option, mainnet pilot cap | Built: price guard (live-tested), Jito bundle sending (tx build verified against Jupiter and Jito; sending untested). CoinGecko is the second price source instead of Pyth |
 | M7 Billing: Stripe checkout, portal, webhook, billing page | Built; Stripe needs keys and prices; USDC payments verified on-chain (logic tested, never run live) |
-| M8 Growth: referral links, opt-in public leaderboard, shareable Decision Records | Built; referral rewards (30 days of Pro per paying referral, max 12) need the database to run |
+| M8 Growth: referral links, shareable Decision Records (the public leaderboard is switched off for the MVP) | Built; referral rewards (30 days of Pro per paying referral, max 12) need the database to run |
 
 ## What you need
 
@@ -136,8 +142,9 @@ Orca works in layers. Each layer needs a few more things, and you can stop at an
 | To get | You need | Variables |
 | --- | --- | --- |
 | **Live board, signals, news, sectors, index and ETF flows** (no login) | A SoSoValue API key | `SOSO_API_KEY` |
+| **Sign-up with a wallet created for the user** (email or Google, embedded Solana wallet) | A free Privy app | `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET` (optional: without them the app falls back to email and wallet sign-in) |
 | **Ask Orca** | An Anthropic key, or any OpenAI-compatible endpoint | `ANTHROPIC_API_KEY`, or `OPENAI_BASE_URL` + `OPENAI_MODEL` + `OPENAI_API_KEY` |
-| **Accounts, agents, paper trading, portfolio, decision log, leaderboard** | A Postgres database (Neon) and two random secrets | `DATABASE_URL`, `AUTH_SECRET`, `AGENT_KEY_SECRET` |
+| **Accounts, agents, paper trading, portfolio, decision log** | A Postgres database (Neon) and two random secrets | `DATABASE_URL`, `AUTH_SECRET`, `AGENT_KEY_SECRET` |
 | **Scheduled agent runs** | A secret the scheduler sends | `CRON_SECRET` |
 | **Telegram alerts** | A bot from @BotFather | `TELEGRAM_BOT_TOKEN` |
 | **Card subscriptions** | Stripe, Dodo Payments, or both | Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAMS`. Dodo: `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_PAYMENTS_ENV`, `DODO_PRODUCT_PRO`, `DODO_PRODUCT_TEAMS` |
@@ -155,13 +162,15 @@ Generate the secrets with `openssl rand -hex 32` (once each for `AUTH_SECRET`, `
 3. Add the Neon integration (it sets `DATABASE_URL`), then run `npx drizzle-kit migrate` once against it. Nothing creates the tables automatically.
 4. The cron in `app/vercel.json` runs once a day, because Vercel Hobby allows nothing more frequent. For hourly runs use Vercel Pro, or call `/api/cron/run-agents` from an external scheduler with `Authorization: Bearer <CRON_SECRET>`.
 5. SoSoValue's demo plan allows 10 requests a minute, so the first load of a cold instance can take up to a minute. Data pages allow up to 60 seconds and show a loading skeleton meanwhile.
-6. Stripe and Dodo webhooks point at `/api/billing/webhook` and `/api/billing/dodo/webhook`.
+6. **Privy (optional):** in the Privy dashboard enable Email and Google, set the embedded wallet chain to Solana, and add your Vercel URL (and `http://localhost:3000`) to the allowed origins. Set `NEXT_PUBLIC_PRIVY_APP_ID` (a public id) and `PRIVY_APP_SECRET` (secret) in Vercel, then redeploy because the public id is baked in at build time.
+7. Stripe and Dodo webhooks point at `/api/billing/webhook` and `/api/billing/dodo/webhook`.
 
 ### Not finished
 
-- **Run for real, locally:** accounts, wallet sign-in, agents, paper trading, approvals, the leaderboard, plan limits, referral rewards, the Stripe and Dodo webhooks (with correctly signed test events), USDC payments, and the Squads cap. See "Verification scripts".
+- **Run for real, locally:** accounts, wallet sign-in, agents, paper trading, approvals, plan limits, referral rewards, the Stripe and Dodo webhooks (with correctly signed test events), USDC payments, and the Squads cap. See "Verification scripts".
 - **Not run yet:** a real Stripe or Dodo checkout, a real LLM answer (needs a key), a real mainnet swap, and the Squads and funding screens clicked through with a real browser wallet. The Squads and USDC checks used a local chain, not mainnet.
-- Order Flow shows "no data" when the exchange returns an empty order book.
+- **Privy** sign-in, the Wallet page and "fund an agent from my Orca wallet" are written and type-checked, and the account-linking logic is tested on a real database, but they have never run against a real Privy app (that needs your app id). Try a sign-up with a small amount first.
+- The public leaderboard is switched off for the MVP. Its code is kept, commented out, in `app/leaderboard/page.tsx` and `app/api/agents/[id]/list/route.ts`.
 - The legal pages (`/terms`, `/privacy`, `/risk`) are plain templates. Have a lawyer review them before you charge customers or enable live trading.
 
 ## Run it
