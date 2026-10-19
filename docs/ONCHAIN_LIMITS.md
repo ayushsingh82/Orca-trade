@@ -31,7 +31,10 @@ The user can lower or remove the limit, or empty the vault, at any time because 
 - API: `POST /api/agents/[id]/vault/setup` builds the unsigned transaction, `POST .../vault/confirm` links the vault
   only after verifying it on chain, `DELETE .../vault/confirm` unlinks it.
 - UI: the Agents page has a "Create vault" flow for live agents, then shows the vault address and the active cap.
-- Runner: before a live buy, the agent is funded from the vault (`carryOut` in `agents/runner.ts`).
+- Runner: before a live buy, the agent is funded from the vault (`carryOut` in `agents/runner.ts`). For risk sizing,
+  a linked agent's capital includes what it may still draw today (`vaultAvailableUsdc`): the smaller of the vault
+  balance and the remaining on-chain limit. An unreadable or unsafe vault counts as zero. Without this, an agent whose
+  wallet is empty between trades would fail the concentration check on every first buy.
 
 ### What was run against the real Squads program
 
@@ -64,8 +67,6 @@ cd app && npx tsx scripts/squads-e2e.ts
 - The Agents-page UI and the two API routes have been type-checked and built, not clicked through. They need a
   database and a wallet.
 - Squads charges a creation fee on mainnet (paid by the user's wallet in the setup transaction).
-- The risk engine's portfolio value for a vault-linked agent counts only the agent wallet, not the vault, so
-  concentration limits are measured against a smaller number (more conservative, never less).
 - Set `SOLANA_RPC_URL` (server) and `NEXT_PUBLIC_SOLANA_RPC` (browser) to a dedicated RPC for production; the
   public endpoint is rate limited.
 - Recommendation: try it with a small amount first.

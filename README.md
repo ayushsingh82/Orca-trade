@@ -159,9 +159,10 @@ Generate the secrets with `openssl rand -hex 32` (once each for `AUTH_SECRET`, `
 
 ### Not finished
 
-- The Squads vault flow is verified on a local validator, but not on mainnet with real USDC, and the Agents-page UI has not been clicked through with a real wallet.
-- Nothing that needs a database, payment provider or funded wallet has been run end to end. The code is built and unit-tested; the first real run is yours.
-- SoDEX Flow shows "no data" when SoDEX returns an empty book.
+- **Run for real, locally:** accounts, wallet sign-in, agents, paper trading, approvals, the leaderboard, plan limits, referral rewards, the Stripe and Dodo webhooks (with correctly signed test events), USDC payments, and the Squads cap. See "Verification scripts".
+- **Not run yet:** a real Stripe or Dodo checkout, a real LLM answer (needs a key), a real mainnet swap, and the Squads and funding screens clicked through with a real browser wallet. The Squads and USDC checks used a local chain, not mainnet.
+- Order Flow shows "no data" when the exchange returns an empty order book.
+- The legal pages (`/terms`, `/privacy`, `/risk`) are plain templates. Have a lawyer review them before you charge customers or enable live trading.
 
 ## Run it
 
@@ -171,7 +172,8 @@ cp .env.example .env.local     # then fill in the values below
 npm install
 npx drizzle-kit migrate        # creates the tables in your Neon database
 npm run dev                    # http://localhost:3000
-npm test                       # Risk Engine, strategies, paper ledger
+npm test                       # Risk Engine, strategies, paper ledger, billing, RSI, Squads, rate limit
+npm run test:db                # database integration tests (needs a LOCAL DATABASE_URL; refuses remote)
 ```
 
 | Variable | Needed for |
@@ -190,10 +192,24 @@ npm test                       # Risk Engine, strategies, paper ledger
 | `JITO_TIP_LAMPORTS` | Optional: send swaps as tipped Jito bundles |
 | `EXECUTION_ENABLED=1` | Real on-chain sending (leave off until you are ready) |
 
+## Verification scripts
+
+Beyond unit tests, three scripts exercise the real thing against local infrastructure (see each file's header):
+
+| Script | What it proves |
+| --- | --- |
+| `app/scripts/squads-e2e.ts` | The Squads daily cap against the real Squads program on a local validator (17 checks) |
+| `app/scripts/usdc-e2e.ts` (+ `usdc-e2e-prep.ts`) | USDC subscription payments with real SPL transfers and the real USDC mint cloned locally (10 checks) |
+| `npm run test:db` | Plan limits (race-safe), refunds and referral rewards on a real Postgres |
+
+Local databases use a plain Postgres over TCP (any `DATABASE_URL` pointing at localhost); production uses Neon.
+
 ## Docs
 
 | File | What it covers |
 | --- | --- |
 | [`IDEA.md`](IDEA.md) | Product concept, layers, differentiators, non-goals |
 | [`PLAN.md`](PLAN.md) | Architecture, tech choices, milestones, tiers and billing, safety rules |
+| [`docs/ONCHAIN_LIMITS.md`](docs/ONCHAIN_LIMITS.md) | The Squads funding cap: design, what was verified, what was not |
+| [`docs/PAYMENTS.md`](docs/PAYMENTS.md) | Stripe vs Dodo vs USDC |
 | [`app/plan.md`](app/plan.md) | How we execute, MarketMind mapping, live status |

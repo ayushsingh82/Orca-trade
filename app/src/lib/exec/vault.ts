@@ -30,6 +30,24 @@ async function tokenBalance(connection: Connection, owner: PublicKey, token: Tok
   }
 }
 
+/**
+ * USDC the agent could still draw from its vault right now: the smaller of the vault balance and what is left of
+ * the on-chain daily limit. Counted as the agent's capital for risk sizing. An unreadable or unsafe vault counts as
+ * zero, so a problem can only make the agent more cautious.
+ */
+export async function vaultAvailableUsdc(connection: Connection, link: VaultLink, agent: PublicKey, token: TokenSpec = USDC_TOKEN): Promise<number> {
+  try {
+    const multisigPda = new PublicKey(link.multisig);
+    const cfg = await readLimitConfig(connection, multisigPda, new PublicKey(link.limit));
+    const problems = verifyLimitConfig(cfg, { owner: link.owner, agent: agent.toBase58(), multisigPda: link.multisig, limitPda: link.limit, token, maxDailyUsdc: link.dailyUsdc });
+    if (problems.length) return 0;
+    const vault = await tokenBalance(connection, squadsAddresses(multisigPda).vault, token);
+    return Math.min(vault, Number(effectiveRemaining(cfg.limit)) / 10 ** token.decimals);
+  } catch {
+    return 0;
+  }
+}
+
 export type PullResult = { pulled: number; signature: string | null; simulated: boolean };
 
 /**

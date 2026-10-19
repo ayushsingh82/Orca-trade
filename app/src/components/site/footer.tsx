@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BrandLogo } from "@/components/brand";
 
 export function Footer() {
@@ -10,7 +11,14 @@ export function Footer() {
             Not financial advice. Trading is risky and you can lose money. Start with paper trading and small amounts.
           </p>
         </div>
-        <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orca</p>
+        <div className="flex flex-col gap-2 text-xs text-muted-foreground md:items-end">
+          <nav className="flex gap-4">
+            <Link href="/terms" className="hover:text-foreground">Terms</Link>
+            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link href="/risk" className="hover:text-foreground">Risk disclosure</Link>
+          </nav>
+          <p>© {new Date().getFullYear()} Orca</p>
+        </div>
       </div>
     </footer>
   );

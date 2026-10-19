@@ -5,10 +5,15 @@ import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { resolveReferrer } from "@/lib/auth/referral";
 import { startSession } from "@/lib/auth/session";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(`signup:${clientIp(req)}`, 10, 60 * 60_000);
+  if (!limit.allowed) {
+    return NextResponse.json({ ok: false, error: "Too many sign-ups from this address. Try again later." }, { status: 429, headers: { "retry-after": String(limit.retryAfterSec) } });
+  }
   const { email, password, ref } = (await req.json().catch(() => ({}))) as { email?: string; password?: string; ref?: string };
   const normalized = email?.trim().toLowerCase();
   if (!normalized || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {

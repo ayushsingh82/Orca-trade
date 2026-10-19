@@ -18,7 +18,7 @@ import {
 } from "@solana/spl-token";
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { buildTopUp, buildVaultSetup, readLimitConfig, readTreasury, squadsAddresses, verifyLimitConfig, type TokenSpec } from "../src/lib/exec/squads";
-import { pullFromVault } from "../src/lib/exec/vault";
+import { pullFromVault, vaultAvailableUsdc } from "../src/lib/exec/vault";
 
 const connection = new Connection(process.env.RPC ?? "http://127.0.0.1:8899", "confirmed");
 let failures = 0;
@@ -80,6 +80,8 @@ const balanceOf = async (owner: PublicKey, token: TokenSpec) => {
 
   // 4. The agent pulls what a trade needs, within the limit.
   const link = { owner: expect.owner, multisig: expect.multisigPda, limit: expect.limitPda, dailyUsdc: 50 };
+  ok("available capital = min(vault 200, daily limit 50) = 50", (await vaultAvailableUsdc(connection, link, agent.publicKey, token)) === 50);
+  ok("a tampered link counts as zero capital", (await vaultAvailableUsdc(connection, { ...link, dailyUsdc: 10 }, agent.publicKey, token)) === 0);
   const r1 = await pullFromVault({ connection, agent, link, neededUsdc: 30, send: true, token });
   ok("agent pulled 30 for a 30 trade", r1.pulled === 30 && (await balanceOf(agent.publicKey, token)) === 30, r1.signature?.slice(0, 8));
   const r0 = await pullFromVault({ connection, agent, link, neededUsdc: 20, send: true, token });
@@ -98,6 +100,7 @@ const balanceOf = async (owner: PublicKey, token: TokenSpec) => {
     /custom program error|0x|exceed|limit|failed/i,
   );
   ok("vault still holds 150 after the rejected attempts", (await balanceOf(vault, token)) === 150);
+  ok("available capital is 0 once the daily limit is spent", (await vaultAvailableUsdc(connection, link, agent.publicKey, token)) === 0);
 
   // 6. Nobody else can use the limit.
   await expectFail(

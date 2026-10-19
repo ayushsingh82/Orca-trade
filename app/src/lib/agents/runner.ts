@@ -1,4 +1,4 @@
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, decisions, users, type Agent, type Decision } from "@/db/schema";
@@ -9,7 +9,7 @@ import { resolveReferencePrice } from "@/lib/exec/reference";
 import { readPortfolio } from "@/lib/exec/portfolio";
 import { executeProposal } from "@/lib/exec/router";
 import { loadAgentKeypair } from "@/lib/exec/signer";
-import { pullFromVault, type VaultLink } from "@/lib/exec/vault";
+import { pullFromVault, vaultAvailableUsdc, type VaultLink } from "@/lib/exec/vault";
 import { evaluate } from "@/lib/risk/engine";
 import type { Check, Proposal, RiskContext, Verdict } from "@/lib/risk/types";
 import { buildSignals } from "@/lib/signals";
@@ -33,7 +33,11 @@ export async function getBook(agent: Agent, prices: Record<string, number>): Pro
     const fills = await db().select().from(decisions).where(eq(decisions.agentId, agent.id)).orderBy(asc(decisions.createdAt));
     return paperPortfolio(agent.paperStartUsd, fills, prices);
   }
-  return readPortfolio(agent.walletPublicKey, prices);
+  const book = await readPortfolio(agent.walletPublicKey, prices);
+  // With a vault, the agent's capital also includes what it may still draw today (capped on chain).
+  const link = vaultLink(agent);
+  if (link) book.totalUsd += await vaultAvailableUsdc(new Connection(RPC_URL, "confirmed"), link, new PublicKey(agent.walletPublicKey));
+  return book;
 }
 
 async function riskContext(agent: Agent, book: Book, asset?: string): Promise<RiskContext> {

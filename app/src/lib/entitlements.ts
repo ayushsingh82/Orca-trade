@@ -39,6 +39,15 @@ export async function consume(user: Pick<User, "id" | "plan">, metric: Metric) {
   return { allowed: true, remaining: limit - rows[0].count };
 }
 
+/** Gives back one unit after a request that failed through no fault of the user. Never goes below zero. */
+export async function refund(user: Pick<User, "id" | "plan">, metric: Metric) {
+  if (LIMITS[user.plan][metric] === null) return;
+  await db()
+    .update(usage)
+    .set({ count: sql`greatest(${usage.count} - 1, 0)` })
+    .where(and(eq(usage.userId, user.id), eq(usage.metric, metric), eq(usage.day, today())));
+}
+
 export async function used(userId: string, metric: Metric) {
   const [row] = await db()
     .select({ count: usage.count })
