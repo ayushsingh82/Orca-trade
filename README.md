@@ -47,7 +47,8 @@ Idea 1 is the **brain** (market intelligence). Idea 2 is the **hands** (agents t
 | Trust before you risk money | **Paper trading**: a virtual $1,000 filled at real Jupiter quotes, with live PnL |
 | Stay in control | Three modes per agent: **observe** (log only), **propose** (you approve each trade), **autonomous** (acts within limits) |
 | Fund it | **Wallet**: every new user gets their own Solana wallet at sign-up (through Privy), shows balances, can be funded by card or crypto, and can fund an agent in one step |
-| Know what happened | **Decision log** (full record per run), **Portfolio** (value, positions, PnL) and **Telegram alerts** |
+| Take it back out | **Withdraw** from any live agent to your own wallet: USDC, SOL or everything. Funds can only go to your wallet |
+| Know what happened | **Decision log** (full record per run), **Portfolio** (total value, realized and unrealized PnL, win rate, allocation, equity curves, CSV export) and **Telegram alerts** |
 
 ### How an agent decides
 
@@ -209,6 +210,8 @@ Beyond unit tests, three scripts exercise the real thing against local infrastru
 | --- | --- |
 | `app/scripts/squads-e2e.ts` | The Squads daily cap against the real Squads program on a local validator (17 checks) |
 | `app/scripts/usdc-e2e.ts` (+ `usdc-e2e-prep.ts`) | USDC subscription payments with real SPL transfers and the real USDC mint cloned locally (10 checks) |
+| `app/scripts/withdraw-e2e.ts` (+ `withdraw-e2e-prep.ts`) | Withdrawals from an agent wallet on a local chain with the real USDC and wBTC mints cloned (14 checks) |
+| `app/scripts/withdraw-app-e2e.ts` | The withdraw API and Portfolio page through the running app, on a real Postgres and a local chain (22 checks) |
 | `npm run test:db` | Plan limits (race-safe), refunds and referral rewards on a real Postgres |
 
 Local databases use a plain Postgres over TCP (any `DATABASE_URL` pointing at localhost); production uses Neon.

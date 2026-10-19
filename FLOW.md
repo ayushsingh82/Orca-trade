@@ -35,7 +35,9 @@ Sign up ─► Wallet created ─► Fund wallet ─► Create agent ─► Fund
 - Status: **built and run**.
 
 ## 6. Prove it with paper trading
-- A paper agent trades a virtual $1,000 at real Jupiter quotes. The Portfolio page shows value, positions and PnL.
+- A paper agent trades a virtual $1,000 at real Jupiter quotes.
+- The **Portfolio** page shows: total value across your wallet and agents, paper PnL, realized and unrealized PnL, win rate, an allocation bar, your wallet balances, pending approvals, and per agent an equity curve, positions with average entry, recent activity, and a CSV download of your history.
+- Live agents show their real on-chain wallet balances with a Solscan link. Profit and loss for live agents is not tracked yet.
 - Status: **built and run**.
 
 ## 7. Go live and set the cap
@@ -71,8 +73,10 @@ Status: **built and run** for paper agents. Real mainnet swaps **not run** (need
 - Status: **built and run**.
 
 ## 10. Take money out
-- **Missing.** There is no button to move funds from an agent back to the user's wallet. This is the most important gap before a real launch.
-- Planned: the server signs a transfer from the agent's wallet to the user's wallet, with the same ownership checks as other agent actions.
+- A **Withdraw** button on each live agent (Agents and Portfolio pages) sends USDC, SOL, or **everything** back to the user's own wallet. The server signs from the agent's wallet.
+- The destination is always the signed-in user's own wallet, read from their account and never from the request. A stolen session cannot redirect funds, another user cannot touch the agent, and paper agents hold nothing to withdraw.
+- Over-withdrawals are refused with a clear message, the owner pays nothing (the agent covers fees and the owner's token-account rent), and every withdrawal is recorded with its transaction link.
+- Status: **built and run** on a local chain with real USDC and wBTC mints (14 checks) and through the app against a real database (22 checks). Not run on mainnet.
 
 ## 11. Pay for Orca
 - Free, Pro (about $29/month) and Teams (about $199/month). Pay by card with **Stripe** or **Dodo Payments**, or in **USDC** for 30 days.
@@ -80,7 +84,7 @@ Status: **built and run** for paper agents. Real mainnet swaps **not run** (need
 - Status: webhooks and USDC verification **built and run** on test events and a local chain. Real checkouts **not run** (needs your keys).
 
 ## Gaps, in priority order
-1. **Withdraw from an agent** (missing).
-2. **Squads cap with a Privy wallet** (the vault setup only accepts an external wallet).
-3. **One "Invest" step** that picks the agent, the amount and the cap on one screen, instead of separate screens.
+1. **Squads cap with a Privy wallet** (the vault setup only accepts an external wallet).
+2. **One "Invest" step** that picks the agent, the amount and the cap on one screen, instead of separate screens.
+3. **Profit and loss for live agents** (needs deposits recorded as well as withdrawals).
 4. First real run of Privy, a real checkout and a funded mainnet trade, each with a small amount.
