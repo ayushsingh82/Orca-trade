@@ -7,6 +7,7 @@ import { ErrorCard } from "@/components/error-card";
 const STRATEGIES = [
   { id: "momentum", label: "Momentum", hint: "Follow the strongest directional signal" },
   { id: "narrative_rotation", label: "Narrative Rotation", hint: "Act only on news-backed moves" },
+  { id: "rsi_reversion", label: "RSI Reversion", hint: "Buy oversold dips in a healthy trend, sell overbought" },
 ];
 const MODES = ["observe", "propose", "autonomous"];
 

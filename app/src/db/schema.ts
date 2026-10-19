@@ -39,7 +39,7 @@ export const usage = pgTable(
 
 export type User = typeof users.$inferSelect;
 
-export const STRATEGIES = ["momentum", "narrative_rotation"] as const;
+export const STRATEGIES = ["momentum", "narrative_rotation", "rsi_reversion"] as const;
 export type Strategy = (typeof STRATEGIES)[number];
 
 export const agents = pgTable("agents", {

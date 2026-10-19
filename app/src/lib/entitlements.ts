@@ -6,7 +6,7 @@ export type Plan = User["plan"];
 export type Metric = "ask";
 
 /** Max agents per plan. */
-export const AGENT_LIMITS: Record<Plan, number> = { free: 1, pro: 5, teams: 25 };
+export const AGENT_LIMITS: Record<Plan, number> = { free: 3, pro: 5, teams: 25 };
 
 /** Per-day limits by plan. `null` = unlimited (fair use). Placeholder numbers per PLAN.md. */
 export const LIMITS: Record<Plan, Record<Metric, number | null>> = {

@@ -13,7 +13,8 @@ import { pullFromVault, vaultAvailableUsdc, type VaultLink } from "@/lib/exec/va
 import { evaluate } from "@/lib/risk/engine";
 import type { Check, Proposal, RiskContext, Verdict } from "@/lib/risk/types";
 import { buildSignals } from "@/lib/signals";
-import { STRATEGY_FNS } from "./strategies";
+import { researchAll } from "@/lib/research";
+import { STRATEGY_FNS, type AssetRsi } from "./strategies";
 
 const startOfUtcDay = () => new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
 
@@ -67,6 +68,16 @@ export function vaultLink(agent: Agent): VaultLink | null {
   return { owner: agent.squadsOwner, multisig: agent.squadsMultisig, limit: agent.squadsLimit, dailyUsdc: agent.squadsDailyUsdc };
 }
 
+/** Live RSI per asset (cached upstream). A failure yields nothing, and the strategy then does nothing. */
+async function rsiByAsset(): Promise<Record<string, AssetRsi>> {
+  try {
+    const { tokens } = await researchAll();
+    return Object.fromEntries(tokens.map((t) => [t.symbol, { "1h": t.rsi["1h"].value, "4h": t.rsi["4h"].value, "24h": t.rsi["24h"].value, "7d": t.rsi["7d"].value }]));
+  } catch {
+    return {};
+  }
+}
+
 async function carryOut(agent: Agent, proposal: Proposal, primaryPrice: number): Promise<Outcome> {
   // Cross-check the SoSoValue price against CoinGecko. Live agents require the second source to be up.
   const price = await resolveReferencePrice(proposal.asset, primaryPrice, { requireSecond: !agent.paper });
@@ -108,7 +119,8 @@ export async function runAgent(agent: Agent): Promise<Decision> {
   const { signals, source } = await buildSignals();
   const prices = priceMap(signals);
   const book = await getBook(agent, prices);
-  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: effectivePolicy(agent), positionsUsd: book.positionsUsd });
+  const rsi = agent.strategy === "rsi_reversion" ? await rsiByAsset() : undefined;
+  const out = STRATEGY_FNS[agent.strategy]({ signals, policy: effectivePolicy(agent), positionsUsd: book.positionsUsd, rsi });
 
   let verdict: Verdict = "log_only";
   let checks: Check[] = [];

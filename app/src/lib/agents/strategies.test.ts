@@ -50,3 +50,50 @@ describe("parsePolicy", () => {
     }
   });
 });
+
+describe("rsi_reversion", () => {
+  const rsiOf = (h1: number | null, h4: number | null, d1: number | null, w: number | null) => ({ "1h": h1, "4h": h4, "24h": d1, "7d": w });
+  const run = (rsi: Record<string, ReturnType<typeof rsiOf>>, positionsUsd = {}, p = policy) =>
+    STRATEGY_FNS.rsi_reversion({ signals: [sig({ asset: "SOL" }), sig({ asset: "ETH" })], policy: p, positionsUsd, rsi });
+
+  it("does nothing without RSI data", () => {
+    assert.equal(run({}).proposal, null);
+    assert.match(run({}).rationale[0], /unavailable/);
+  });
+  it("buys an oversold dip when the weekly trend is healthy, and shows the live RSI it used", () => {
+    const out = run({ SOL: rsiOf(24, 22, 35, 52), ETH: rsiOf(55, 50, 50, 50) });
+    assert.deepEqual([out.proposal?.asset, out.proposal?.side], ["SOL", "buy"]);
+    assert.match(out.rationale.join(" "), /RSI 1h 24 · 4h 22/);
+    assert.ok((out.proposal?.conviction ?? 0) >= 60 && (out.proposal?.conviction ?? 0) <= 80);
+  });
+  it("does not buy a dip when the weekly trend is broken", () => {
+    assert.equal(run({ SOL: rsiOf(24, 22, 35, 30), ETH: rsiOf(50, 50, 50, 50) }).proposal, null);
+  });
+  it("needs both short timeframes oversold", () => {
+    assert.equal(run({ SOL: rsiOf(50, 22, 35, 55), ETH: rsiOf(50, 50, 50, 50) }).proposal, null);
+  });
+  it("respects the conviction floor", () => {
+    // 4h RSI of 29 gives conviction 52, below the default floor of 60.
+    assert.equal(run({ SOL: rsiOf(30, 29, 50, 55), ETH: rsiOf(50, 50, 50, 50) }).proposal, null);
+  });
+  it("sells a held position that is overbought on 4h, capped by position size", () => {
+    const out = run({ SOL: rsiOf(75, 72, 65, 60), ETH: rsiOf(50, 50, 50, 50) }, { SOL: 12 });
+    assert.deepEqual([out.proposal?.side, out.proposal?.sizeUsd], ["sell", 12]);
+  });
+  it("does not sell what it does not hold", () => {
+    assert.equal(run({ SOL: rsiOf(75, 72, 65, 60), ETH: rsiOf(50, 50, 50, 50) }).proposal, null);
+  });
+});
+
+describe("no-action runs still report live data", () => {
+  it("momentum lists what it is watching, strongest first", () => {
+    const out = STRATEGY_FNS.momentum({ signals: [sig({ asset: "ETH", direction: "short", conviction: 41, price: 2424 }), sig({ asset: "SOL", direction: "short", conviction: 55, price: 104.5 })], policy, positionsUsd: {} });
+    assert.equal(out.proposal, null);
+    assert.match(out.rationale[1], /^Watching: SOL \$104\.5 short 55 · ETH \$2,424 short 41$/);
+  });
+  it("narrative rotation does the same", () => {
+    const out = STRATEGY_FNS.narrative_rotation({ signals: [sig({ citations: [], conviction: 70 })], policy, positionsUsd: {} });
+    assert.equal(out.proposal, null);
+    assert.match(out.rationale[1], /^Watching: SOL/);
+  });
+});

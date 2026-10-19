@@ -6,6 +6,7 @@ import { ActionButton } from "@/components/agents/action-button";
 import { ToggleButton } from "@/components/agents/toggle-button";
 import { CreateAgentForm } from "@/components/agents/create-agent-form";
 import { FundAgent } from "@/components/agents/fund-agent";
+import { StarterAgents } from "@/components/agents/starter-agents";
 import { VaultSetup } from "@/components/agents/vault-setup";
 import { squadsAddresses } from "@/lib/exec/squads";
 import { PublicKey } from "@solana/web3.js";
@@ -51,6 +52,7 @@ export default async function AgentsPage() {
       <p className="-mt-4 mb-6 text-xs text-muted-foreground">
         Execution: {EXECUTION_ENABLED ? "live on Solana mainnet" : "quote + simulate only (EXECUTION_ENABLED is off)"}
       </p>
+      <StarterAgents existing={mine.map((a) => a.name)} />
       <div className="grid gap-6 xl:grid-cols-[1fr_2fr]">
         <CreateAgentForm />
         <div className="space-y-6">
