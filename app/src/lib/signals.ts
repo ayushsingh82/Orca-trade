@@ -5,6 +5,7 @@ import { buildMarketMindIndex } from "./intel/ssi";
 import { getKlines } from "./intel/sosovalue";
 import { convictionFrom, scoreSignal } from "./scoring";
 import type { Contradiction } from "./intel/types";
+import { buildExtendedSignals } from "./signals-extended";
 
 export type OrcaSignal = {
   id: string;
@@ -96,6 +97,10 @@ export async function buildSignals(): Promise<SignalsResult> {
       riskFlag,
     }];
   });
+
+  // The other tradable tokens, trend-only. If market data is down the news-covered majors still work.
+  const extended = await buildExtendedSignals(new Set(signals.map((s) => s.asset))).catch(() => []);
+  signals.push(...extended);
 
   signals.sort((a, b) => b.conviction - a.conviction);
   return { signals, generatedAt: Date.now(), source: index.source };

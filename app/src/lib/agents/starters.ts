@@ -7,4 +7,7 @@ export const STARTERS: Starter[] = [
   { name: "RSI Dip Watcher", strategy: "rsi_reversion", blurb: "Flags oversold dips inside a healthy trend, and overbought exits.", data: "Live RSI on 1h, 4h, 24h and 7d" },
 ];
 
-export const STARTER_POLICY = { mode: "observe", maxTradeUsd: 25, maxDailyUsd: 100, minConviction: 60 } as const;
+import { TRADABLE } from "@/lib/exec/mints";
+
+/** Starter agents only observe, so they may watch every tradable token. Live agents default to the large caps only. */
+export const STARTER_POLICY = { mode: "observe", maxTradeUsd: 25, maxDailyUsd: 100, minConviction: 60, allowedAssets: TRADABLE.map((t) => t.symbol) } as const;

@@ -1,4 +1,4 @@
-import { TOKENS } from "./mints";
+import { TOKENS, tokenBySymbol } from "./mints";
 
 /**
  * Reference prices for the quote guard. SoSoValue is the primary source; CoinGecko is an independent
@@ -44,6 +44,35 @@ async function fetchCoinGecko(): Promise<Record<string, number>> {
   return out;
 }
 
+/** Smallest on-chain liquidity (USD) we accept for a non-core token, so a thin or manipulable pool is never traded. */
+export const MIN_LIQUIDITY_USD = 2_000_000;
+
+type JupToken = { id?: string; usdPrice?: number; liquidity?: number; isVerified?: boolean };
+
+/** Pure: Jupiter's verified price and liquidity for one mint out of a token-search result. */
+export function pickJupiterPrice(results: unknown, mint: string): { price: number; liquidity: number } {
+  const t = Array.isArray(results) ? (results as JupToken[]).find((x) => x.id === mint) : undefined;
+  if (!t) throw new Error("token not found on Jupiter");
+  if (!t.isVerified) throw new Error("token is not verified on Jupiter");
+  if (!(typeof t.usdPrice === "number" && t.usdPrice > 0)) throw new Error("Jupiter has no price for this token");
+  const liquidity = typeof t.liquidity === "number" ? t.liquidity : 0;
+  if (liquidity < MIN_LIQUIDITY_USD) throw new Error(`on-chain liquidity $${Math.round(liquidity).toLocaleString()} is below the $${MIN_LIQUIDITY_USD.toLocaleString()} minimum`);
+  return { price: t.usdPrice, liquidity };
+}
+
+const jupCache = new Map<string, { at: number; price: number }>();
+
+/** Jupiter's own price for a token, independent of CoinGecko. Also enforces the liquidity floor. */
+export async function getJupiterPrice(mint: string): Promise<number> {
+  const hit = jupCache.get(mint);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.price;
+  const res = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`, { cache: "no-store", signal: AbortSignal.timeout(8_000) });
+  if (!res.ok) throw new Error(`Jupiter ${res.status}`);
+  const { price } = pickJupiterPrice(await res.json(), mint);
+  jupCache.set(mint, { at: Date.now(), price });
+  return price;
+}
+
 export async function getCoinGeckoPrice(asset: string): Promise<number> {
   const symbol = asset.toUpperCase();
   if (!(symbol in TOKENS) || !COINGECKO_IDS[symbol]) throw new Error(`no CoinGecko id for ${symbol}`);
@@ -61,7 +90,10 @@ export async function getCoinGeckoPrice(asset: string): Promise<number> {
 export async function resolveReferencePrice(asset: string, primary: number, opts: { requireSecond: boolean }): Promise<number> {
   let second: number;
   try {
-    second = await getCoinGeckoPrice(asset);
+    const token = tokenBySymbol(asset);
+    // Core assets: SoSoValue vs CoinGecko. Other tokens use CoinGecko as the primary price, so their independent
+    // check is Jupiter's own token price (which also enforces the liquidity floor).
+    second = token && token.risk !== "core" ? await getJupiterPrice(token.mint) : await getCoinGeckoPrice(asset);
   } catch (e) {
     if (opts.requireSecond) throw new Error(`second price source unavailable: ${e instanceof Error ? e.message : "error"}`);
     return crossCheck([primary]);

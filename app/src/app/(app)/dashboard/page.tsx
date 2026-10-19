@@ -69,9 +69,12 @@ export default async function DashboardPage() {
           { label: "Updated", value: fmtAgo(data.generatedAt), hint: "cached up to a few minutes" },
         ]}
       />
-      <h2 className="mb-3 font-display text-lg font-semibold">Opportunities</h2>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-lg font-semibold">Opportunities</h2>
+        <Link href="/markets" className="text-xs text-accent underline">All markets →</Link>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {signals.map((s) => (
+        {signals.slice(0, 12).map((s) => (
           <Link key={s.id} href={`/signals/${s.asset}`} className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold">{s.asset}</h2>

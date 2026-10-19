@@ -1,9 +1,10 @@
 import type { AgentMode, Policy } from "@/lib/risk/types";
-import { TOKENS } from "@/lib/exec/mints";
+import { CORE_SYMBOLS, TOKENS } from "@/lib/exec/mints";
 
 export const DEFAULT_POLICY: Policy = {
   mode: "observe",
-  allowedAssets: Object.keys(TOKENS),
+  // Large caps by default. Other tokens (including memecoins) are an explicit opt-in per agent.
+  allowedAssets: CORE_SYMBOLS,
   maxTradeUsd: 25,
   maxDailyUsd: 100,
   maxSlippageBps: 50,

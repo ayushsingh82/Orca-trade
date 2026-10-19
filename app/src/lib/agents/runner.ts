@@ -13,7 +13,7 @@ import { pullFromVault, vaultAvailableUsdc, type VaultLink } from "@/lib/exec/va
 import { evaluate } from "@/lib/risk/engine";
 import type { Check, Proposal, RiskContext, Verdict } from "@/lib/risk/types";
 import { buildSignals } from "@/lib/signals";
-import { researchAll } from "@/lib/research";
+import { researchSymbols } from "@/lib/research";
 import { STRATEGY_FNS, type AssetRsi } from "./strategies";
 
 const startOfUtcDay = () => new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
@@ -69,9 +69,9 @@ export function vaultLink(agent: Agent): VaultLink | null {
 }
 
 /** Live RSI per asset (cached upstream). A failure yields nothing, and the strategy then does nothing. */
-async function rsiByAsset(): Promise<Record<string, AssetRsi>> {
+async function rsiByAsset(symbols: string[]): Promise<Record<string, AssetRsi>> {
   try {
-    const { tokens } = await researchAll();
+    const tokens = await researchSymbols(symbols);
     return Object.fromEntries(tokens.map((t) => [t.symbol, { "1h": t.rsi["1h"].value, "4h": t.rsi["4h"].value, "24h": t.rsi["24h"].value, "7d": t.rsi["7d"].value }]));
   } catch {
     return {};
@@ -119,7 +119,7 @@ export async function runAgent(agent: Agent): Promise<Decision> {
   const { signals, source } = await buildSignals();
   const prices = priceMap(signals);
   const book = await getBook(agent, prices);
-  const rsi = agent.strategy === "rsi_reversion" ? await rsiByAsset() : undefined;
+  const rsi = agent.strategy === "rsi_reversion" ? await rsiByAsset(effectivePolicy(agent).allowedAssets) : undefined;
   const out = STRATEGY_FNS[agent.strategy]({ signals, policy: effectivePolicy(agent), positionsUsd: book.positionsUsd, rsi });
 
   let verdict: Verdict = "log_only";
