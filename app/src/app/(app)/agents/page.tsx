@@ -65,9 +65,11 @@ export default async function AgentsPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {/* Leaderboard is switched off for the MVP.
                   {a.paper && (
                     <ToggleButton url={`/api/agents/${a.id}/list`} field="listed" on={a.listed} labelOn="Listed on leaderboard · unlist" labelOff="List on leaderboard" />
                   )}
+                  */}
                   <ActionButton url={`/api/agents/${a.id}/run`} label="Run now" busyLabel="Running…" />
                 </div>
               </div>

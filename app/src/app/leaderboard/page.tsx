@@ -1,3 +1,13 @@
+import { notFound } from "next/navigation";
+
+// The public leaderboard is switched off for the MVP. The original page is kept below so it can be restored:
+// delete this stub, uncomment the code, and re-enable the sidebar link, the toggle on the agents page and the
+// /api/agents/[id]/list route.
+export default function Leaderboard() {
+  notFound();
+}
+
+/*
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agents } from "@/db/schema";
@@ -9,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-/** Public leaderboard of opt-in paper agents, ranked by return since their virtual $1,000 start. */
+/** Public leaderboard of opt-in paper agents, ranked by return since their virtual $1,000 start. *\/
 export default async function Leaderboard() {
   let rows;
   try {
@@ -62,3 +72,5 @@ export default async function Leaderboard() {
     </div>
   );
 }
+
+*/

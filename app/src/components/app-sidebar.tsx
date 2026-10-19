@@ -29,7 +29,8 @@ const SECTIONS: { label: string; items: { href: string; label: string; tag: stri
     items: [
       { href: "/agents", label: "Agents", tag: "20" },
       { href: "/portfolio", label: "Portfolio", tag: "21" },
-      { href: "/leaderboard", label: "Leaderboard", tag: "22" },
+      // Leaderboard is switched off for the MVP. Re-enable together with app/leaderboard/page.tsx.
+      // { href: "/leaderboard", label: "Leaderboard", tag: "22" },
     ],
   },
   { label: "Account", items: [{ href: "/billing", label: "Billing", tag: "30" }] },

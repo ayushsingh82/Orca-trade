@@ -1,3 +1,11 @@
+import { NextResponse } from "next/server";
+
+// Leaderboard listing is switched off for the MVP. The original handler is kept below so it can be restored.
+export async function POST() {
+  return NextResponse.json({ ok: false, error: "not available" }, { status: 404 });
+}
+
+/*
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -6,7 +14,7 @@ import { getUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
-/** Owner-only opt-in to the public leaderboard. Only paper agents can be listed. */
+/** Owner-only opt-in to the public leaderboard. Only paper agents can be listed. *\/
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/agents/[id]/list">) {
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Sign in required" }, { status: 401 });
@@ -18,3 +26,5 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/agents/[id]
   await db().update(agents).set({ listed: listed !== false }).where(eq(agents.id, id));
   return NextResponse.json({ ok: true });
 }
+
+*/

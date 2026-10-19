@@ -24,7 +24,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Sharing</h2>
-        <p>A decision record is private unless you choose to share it, and a paper agent appears on the leaderboard only if you list it. Service providers such as hosting, database and payments process data on our behalf.</p>
+        <p>A decision record is private unless you choose to share it,. Service providers such as hosting, database and payments process data on our behalf.</p>
       </section>
       <section>
         <h2>Your choices</h2>

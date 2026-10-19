@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" role="img" aria-label="Orca">
+  <rect width="64" height="64" rx="16" fill="#9085fb"/>
+  <g transform="translate(-1.5 4.5)">
+    <!-- orca, side profile: body, tall dorsal fin, flukes -->
+    <path fill="#151515" d="M6 37C6.5 30.5 13.5 26.5 22 26.5C26 26.5 27.5 23 30.5 12C32.5 19.5 34 25 38.5 27C44.5 29.5 49.5 27.5 53 22.5C54.2 20.8 56.2 19.4 59 18.8C57.6 21.6 57.4 24.6 56.4 27.4C58.4 28.4 59.8 29.6 61 31.6C58.2 31.4 56.2 31.8 54.2 33C49 37 41 40.8 31 42C20 43.2 9.5 42 6 37Z"/>
+    <!-- white belly patch and eye patch -->
+    <path fill="#9085fb" d="M15 39.2C21 41 29.5 40.6 36.5 38C30.5 36.4 21.5 36.4 15 39.2Z"/>
+    <ellipse cx="15.5" cy="31.4" rx="3" ry="1.5" transform="rotate(-18 15.5 31.4)" fill="#9085fb"/>
+  </g>
+  <text x="78" y="43" font-family="'Bricolage Grotesque', 'Geist', ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="600" letter-spacing="-0.5" fill="#f4f4f7">Orca</text>
+</svg>

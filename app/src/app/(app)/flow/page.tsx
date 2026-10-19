@@ -2,11 +2,9 @@ import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { SourceBadge } from "@/components/source-badge";
 import { fmtUsd } from "@/lib/format";
-import { takerBuyStats, toSodexPair } from "@/lib/intel/analytics";
-import { getOrderbook, getRecentTrades } from "@/lib/intel/sodex";
+import { getOrderFlow, type OrderFlow } from "@/lib/intel/orderflow";
 
-// Cold starts hit the SoSoValue rate limit (10 req/min), so allow the full Hobby limit.
-export const maxDuration = 60;
+export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Order Flow" };
 
@@ -15,15 +13,10 @@ const SYMBOLS = ["BTC", "ETH", "SOL"];
 export default async function FlowPage() {
   const results = await Promise.all(
     SYMBOLS.map(async (symbol) => {
-      const pair = toSodexPair(symbol);
       try {
-        const [ob, tr] = await Promise.all([getOrderbook(pair), getRecentTrades(pair, 60)]);
-        if (!ob.data.bids.length && !ob.data.asks.length && !tr.data.length) {
-          return { symbol, ob: null, stats: null, count: 0, error: "No order book or recent trades available right now" };
-        }
-        return { symbol, ob: ob.data, stats: takerBuyStats(tr.data), count: tr.data.length, error: null };
+        return { symbol, flow: await getOrderFlow(symbol), error: null as string | null };
       } catch (e) {
-        return { symbol, ob: null, stats: null, count: 0, error: e instanceof Error ? e.message : "failed" };
+        return { symbol, flow: null as OrderFlow | null, error: e instanceof Error ? e.message : "failed" };
       }
     }),
   );
@@ -32,24 +25,24 @@ export default async function FlowPage() {
   }
   return (
     <>
-      <PageHeader title="Order Flow" description="Order book and taker flow from recent trades. Shows who is lifting offers and who is hitting bids." />
+      <PageHeader title="Order Flow" description="Order book and taker flow from the last 100 trades. Shows who is lifting offers and who is hitting bids." />
       <SourceBadge className="-mt-4 mb-6" />
       <div className="grid gap-4 md:grid-cols-3">
-        {results.map((r) => (
-          <section key={r.symbol} className="rounded-xl border bg-card p-5">
-            <h2 className="font-display text-xl font-semibold">{r.symbol}</h2>
-            {r.error || !r.ob || !r.stats ? (
-              <p className="mt-2 font-mono text-xs text-red-400">{r.error}</p>
+        {results.map(({ symbol, flow, error }) => (
+          <section key={symbol} className="rounded-xl border bg-card p-5">
+            <h2 className="font-display text-xl font-semibold">{symbol}</h2>
+            {error || !flow ? (
+              <p className="mt-2 font-mono text-xs text-red-400">{error}</p>
             ) : (
               <>
                 <dl className="mt-3 space-y-2 text-sm">
-                  <Row k="Spread" v={`${r.ob.spreadBps} bps`} />
-                  <Row k="Depth imbalance" v={`${r.ob.depthImbalance > 0 ? "+" : ""}${r.ob.depthImbalance}`} hint={r.ob.depthImbalance > 0.1 ? "bids heavier" : r.ob.depthImbalance < -0.1 ? "offers heavier" : "balanced"} />
-                  <Row k="Taker buy share" v={`${(r.stats.takerBuyRatio * 100).toFixed(1)}%`} hint={`last ${r.count} trades`} />
-                  <Row k="Net taker flow" v={fmtUsd(r.stats.netFlow)} />
+                  <Row k="Spread" v={`${flow.spreadBps} bps`} />
+                  <Row k="Depth imbalance" v={`${flow.depthImbalance > 0 ? "+" : ""}${flow.depthImbalance}`} hint={flow.depthImbalance > 0.1 ? "bids heavier" : flow.depthImbalance < -0.1 ? "offers heavier" : "balanced"} />
+                  <Row k="Taker buy share" v={`${(flow.takerBuyRatio * 100).toFixed(1)}%`} hint={`last ${flow.trades} trades`} />
+                  <Row k="Net taker flow" v={`${flow.netFlowUsd >= 0 ? "+" : ""}${fmtUsd(flow.netFlowUsd)}`} />
                 </dl>
                 <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full bg-accent" style={{ width: `${r.stats.takerBuyRatio * 100}%` }} />
+                  <div className="h-full bg-accent" style={{ width: `${flow.takerBuyRatio * 100}%` }} />
                 </div>
               </>
             )}
