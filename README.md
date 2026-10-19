@@ -217,6 +217,7 @@ Local databases use a plain Postgres over TCP (any `DATABASE_URL` pointing at lo
 
 | File | What it covers |
 | --- | --- |
+| [`FLOW.md`](FLOW.md) | The user flow from sign-up to an agent trading inside limits, with the status of each step |
 | [`IDEA.md`](IDEA.md) | Product concept, layers, differentiators, non-goals |
 | [`PLAN.md`](PLAN.md) | Architecture, tech choices, milestones, tiers and billing, safety rules |
 | [`docs/ONCHAIN_LIMITS.md`](docs/ONCHAIN_LIMITS.md) | The Squads funding cap: design, what was verified, what was not |
