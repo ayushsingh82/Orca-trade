@@ -30,3 +30,16 @@ export function sourceLabel(s: string) {
     .replace(/SoDEX\s*(taker|trades|flow)?/gi, "order flow")
     .replace(/SoSoValue|CoinGecko|Jupiter/gi, "market data");
 }
+
+/** A USD price that stays readable from $82,000 down to $0.0000029 (never rounds a small price to $0). */
+export function fmtPrice(p: number): string {
+  const a = Math.abs(p);
+  if (!Number.isFinite(p)) return "—";
+  if (a === 0) return "$0";
+  if (a >= 100) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (a >= 1) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 3 })}`;
+  if (a >= 0.01) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
+  // Keep three significant digits however many zeros follow the decimal point.
+  const decimals = Math.min(12, 2 - Math.floor(Math.log10(a)));
+  return `$${p.toFixed(decimals)}`;
+}

@@ -10,14 +10,13 @@ import { Panel } from "@/components/panel";
 import { RsiBadge, RsiGauge, ZONE_LABEL } from "@/components/rsi";
 import { SourceBadge } from "@/components/source-badge";
 import { getUser } from "@/lib/auth/session";
-import { fmtPct, tone } from "@/lib/format";
+import { fmtPct, tone, fmtPrice } from "@/lib/format";
 import { researchCoin, TIMEFRAMES, type TokenResearch } from "@/lib/research";
 import { getMarketsByIds } from "@/lib/tokens/markets";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-const fmtPrice = (p: number) => `$${p.toLocaleString(undefined, { maximumFractionDigits: p >= 100 ? 2 : p >= 1 ? 3 : p >= 0.01 ? 4 : 8 })}`;
 const fmtBig = (n: number | null) => (n == null ? "—" : n >= 1e12 ? `$${(n / 1e12).toFixed(2)}T` : n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n).toLocaleString()}`);
 const TF_NOTE = { "1h": "Short-term momentum.", "4h": "Intraday trend.", "24h": "Daily momentum, the standard reading.", "7d": "Weekly momentum, the larger trend." } as const;
 

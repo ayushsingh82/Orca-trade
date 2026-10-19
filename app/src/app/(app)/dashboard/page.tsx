@@ -4,7 +4,7 @@ import { SourceBadge } from "@/components/source-badge";
 import { ErrorCard } from "@/components/error-card";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PulseRail } from "@/components/panel";
-import { fmtAgo, fmtPct, tone } from "@/lib/format";
+import { fmtAgo, fmtPct, fmtPrice, tone } from "@/lib/format";
 import { buildLiveNewsImpacts, detectContradictions } from "@/lib/intel/marketmind";
 import { getKlines, getSectorSpotlight } from "@/lib/intel/sosovalue";
 import { LineChart } from "@/components/line-chart";
@@ -83,7 +83,7 @@ export default async function DashboardPage() {
               </span>
             </div>
             <p className="mt-1 font-mono text-xs text-muted-foreground">
-              ${s.price.toLocaleString()} · {s.change24h >= 0 ? "+" : ""}
+              {fmtPrice(s.price)} · {s.change24h >= 0 ? "+" : ""}
               {s.change24h}%
             </p>
             <ul className="mt-3 space-y-1 text-sm text-muted-foreground">

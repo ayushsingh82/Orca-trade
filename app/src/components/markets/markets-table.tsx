@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { fmtPrice } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Sparkline } from "@/components/markets/sparkline";
 import { WatchStar } from "@/components/markets/watch-star";
@@ -10,7 +11,6 @@ import { cn } from "@/lib/utils";
 type SortKey = "rank" | "price" | "change1h" | "change24h" | "change7d" | "marketCap" | "volume24h";
 const RISK_STYLE = { core: "border-emerald-400/30 text-emerald-300", standard: "border-sky-400/30 text-sky-300", high: "border-amber-400/40 text-amber-300" } as const;
 
-const fmtPrice = (p: number) => `$${p.toLocaleString(undefined, { maximumFractionDigits: p >= 100 ? 2 : p >= 1 ? 3 : p >= 0.01 ? 4 : 8 })}`;
 const fmtBig = (n: number | null) => (n == null ? "—" : n >= 1e12 ? `$${(n / 1e12).toFixed(2)}T` : n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n).toLocaleString()}`);
 
 function Pct({ v }: { v: number | null }) {

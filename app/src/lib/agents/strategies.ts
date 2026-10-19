@@ -1,3 +1,4 @@
+import { fmtPrice } from "@/lib/format";
 import type { OrcaSignal } from "@/lib/signals";
 import { isTradable } from "@/lib/exec/mints";
 import type { Policy, Proposal } from "@/lib/risk/types";
@@ -22,7 +23,6 @@ const toProposal = (s: OrcaSignal, side: "buy" | "sell", sizeUsd: number, policy
 const eligible = (s: OrcaSignal, policy: Policy) =>
   isTradable(s.asset) && policy.allowedAssets.map((a) => a.toUpperCase()).includes(s.asset);
 
-const fmtPrice = (p: number) => `$${p.toLocaleString(undefined, { maximumFractionDigits: p < 10 ? 4 : 2 })}`;
 
 /** What the agent saw right now, so a "no action" run still reports live data. Strongest conviction first. */
 const watching = (pool: OrcaSignal[]) =>

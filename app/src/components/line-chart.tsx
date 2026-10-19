@@ -1,9 +1,18 @@
+/** Axis labels that stay readable for $82,000 and for $0.0000029 alike. */
+const fmtTick = (v: number) => {
+  const a = Math.abs(v);
+  if (a >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (a >= 100) return v.toFixed(0);
+  if (a >= 1) return v.toFixed(2);
+  return v === 0 ? "0" : v.toPrecision(2);
+};
+
 export type Series = { name: string; color: string; values: number[] };
 
 /** Dependency-free SVG line chart. Every series is plotted on one shared y-axis. */
 export function LineChart({ series, labels, height = 220, fixedRange }: { series: Series[]; labels: [string, string]; height?: number; fixedRange?: [number, number] }) {
   const w = 600;
-  const pad = { l: 36, r: 8, t: 8, b: 20 };
+  const pad = { l: 52, r: 8, t: 8, b: 20 };
   const all = series.flatMap((s) => s.values);
   if (all.length < 2) return <p className="text-sm text-muted-foreground">Not enough data to chart.</p>;
   const lo = fixedRange ? fixedRange[0] : Math.min(...all);
@@ -19,7 +28,7 @@ export function LineChart({ series, labels, height = 220, fixedRange }: { series
           <g key={t}>
             <line x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray="2 4" />
             <text x={pad.l - 6} y={y(t) + 3} textAnchor="end" fontSize="10" fill="var(--muted-foreground)">
-              {t.toFixed(0)}
+              {fmtTick(t)}
             </text>
           </g>
         ))}

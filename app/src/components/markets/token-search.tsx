@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { fmtPrice } from "@/lib/format";
 
 type Hit = { id: string; symbol: string; name: string; image: string | null; rank: number | null; price: number; change24h: number | null; tradable: boolean; risk: string | null };
 
@@ -58,7 +59,7 @@ export function TokenSearch() {
                   <span className="truncate text-muted-foreground">{h.name}</span>
                   {h.rank && <span className="font-mono text-[10px] text-muted-foreground">#{h.rank}</span>}
                   {h.tradable && <span className="rounded border border-emerald-400/30 px-1.5 font-mono text-[9px] uppercase text-emerald-300">tradable</span>}
-                  <span className="ml-auto font-mono text-xs">${h.price.toLocaleString(undefined, { maximumFractionDigits: h.price >= 1 ? 2 : 8 })}</span>
+                  <span className="ml-auto font-mono text-xs">{fmtPrice(h.price)}</span>
                   {h.change24h != null && <span className={`font-mono text-xs ${h.change24h >= 0 ? "text-emerald-400" : "text-red-400"}`}>{h.change24h >= 0 ? "+" : ""}{h.change24h.toFixed(1)}%</span>}
                 </Link>
               </li>

@@ -12,7 +12,7 @@ import { TelegramForm } from "@/components/telegram-form";
 import { getUser } from "@/lib/auth/session";
 import { readPortfolio, type Portfolio } from "@/lib/exec/portfolio";
 import { readWalletBalances } from "@/lib/exec/wallet";
-import { fmtAgo, fmtPct, tone } from "@/lib/format";
+import { fmtAgo, fmtPct, fmtPrice, tone } from "@/lib/format";
 import { allocation, analyzeFills, type PortfolioStats } from "@/lib/portfolio/analytics";
 import { buildSignals } from "@/lib/signals";
 import { cn } from "@/lib/utils";
@@ -231,7 +231,7 @@ export default async function PortfolioPage() {
                       <tr key={p.asset} className="border-t">
                         <td className="py-2 font-medium">{p.asset}</td>
                         <td className="font-mono">{units(p.units)}</td>
-                        <td className="font-mono">{usd(p.avgCost)}</td>
+                        <td className="font-mono">{fmtPrice(p.avgCost)}</td>
                         <td className="font-mono">{usd(p.value)}</td>
                         <td className={cn("font-mono", tone(p.unrealizedUsd))}>
                           {signed(p.unrealizedUsd)} ({fmtPct(p.unrealizedPct)})
@@ -341,7 +341,7 @@ function Fills({ fills }: { fills: Decision[] }) {
             <span className="flex items-center gap-2">
               <span className={cn("text-xs font-medium uppercase", STATUS_STYLE[d.status])}>{d.status}</span>
               {d.proposal ? `${d.proposal.side} ${d.proposal.asset} $${d.proposal.sizeUsd}` : "No action"}
-              {d.fillPrice != null && <span className="font-mono text-xs text-muted-foreground">@ {usd(d.fillPrice)}</span>}
+              {d.fillPrice != null && <span className="font-mono text-xs text-muted-foreground">@ {fmtPrice(d.fillPrice)}</span>}
             </span>
             <span className="font-mono text-xs text-muted-foreground">
               {fmtAgo(d.createdAt.getTime())}

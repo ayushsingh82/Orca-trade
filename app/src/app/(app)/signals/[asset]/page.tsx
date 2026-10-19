@@ -1,4 +1,5 @@
 import { sourceLabel } from "@/lib/format";
+import { fmtPrice } from "@/lib/format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -30,7 +31,7 @@ export default async function SignalPage({ params }: PageProps<"/signals/[asset]
       </Link>
       <PageHeader
         title={`${signal.asset} · ${signal.direction}`}
-        description={`$${signal.price.toLocaleString()} · ${signal.change24h >= 0 ? "+" : ""}${signal.change24h}% 24h · conviction ${signal.conviction}`}
+        description={`${fmtPrice(signal.price)} · ${signal.change24h >= 0 ? "+" : ""}${signal.change24h}% 24h · conviction ${signal.conviction}`}
       />
       <SourceBadge source={source} className="-mt-4 mb-6" />
       <div className="grid gap-4 md:grid-cols-2">
