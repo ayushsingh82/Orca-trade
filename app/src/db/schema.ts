@@ -96,6 +96,26 @@ export const decisions = pgTable("decisions", {
   error: text("error"),
 });
 
+/** Money moved out of an agent wallet back to its owner. Kept as an audit trail and for the portfolio history. */
+export const agentTransfers = pgTable("agent_transfers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id")
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["withdraw"] }).notNull().default("withdraw"),
+  /** "USDC", "SOL", or a token mint address. */
+  asset: text("asset").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  /** Where it went: always the owner's own wallet. */
+  destination: text("destination").notNull(),
+  signature: text("signature").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type AgentTransfer = typeof agentTransfers.$inferSelect;
+
 export type Agent = typeof agents.$inferSelect;
 export type Decision = typeof decisions.$inferSelect;
 

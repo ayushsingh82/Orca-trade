@@ -7,6 +7,7 @@ import { ToggleButton } from "@/components/agents/toggle-button";
 import { CreateAgentForm } from "@/components/agents/create-agent-form";
 import { FundAgent } from "@/components/agents/fund-agent";
 import { StarterAgents } from "@/components/agents/starter-agents";
+import { WithdrawButton } from "@/components/agents/withdraw-button";
 import { FundFromOrcaWallet } from "@/components/agents/fund-from-orca-wallet";
 import { VaultSetup } from "@/components/agents/vault-setup";
 import { squadsAddresses } from "@/lib/exec/squads";
@@ -81,6 +82,9 @@ export default async function AgentsPage() {
                   <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground">Agent wallet: {a.walletPublicKey}</p>
                   {process.env.NEXT_PUBLIC_PRIVY_APP_ID && user.wallet && <FundFromOrcaWallet fromAddress={user.wallet} agentAddress={a.walletPublicKey} />}
                   <FundAgent address={a.walletPublicKey} />
+                  <div className="mt-3">
+                    <WithdrawButton agentId={a.id} agentName={a.name} destination={user.wallet} />
+                  </div>
                   <VaultSetup
                     agentId={a.id}
                     linked={

@@ -64,6 +64,13 @@
       "when": 1792394565132,
       "tag": "0008_sturdy_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792408845530,
+      "tag": "0009_sloppy_corsair",
+      "breakpoints": true
     }
   ]
 }
