@@ -1,3 +1,4 @@
+import { tokenBySymbol } from "@/lib/exec/mints";
 import { getDaily, getHourly, RESEARCH_ASSETS } from "./prices";
 import { resample, rsi, rsiSeries, zone, type Point, type Zone } from "./rsi";
 
@@ -54,6 +55,11 @@ function summarize(rsis: Record<Timeframe, TimeframeRsi>): string {
 export async function researchToken(symbol: string): Promise<TokenResearch> {
   const asset = RESEARCH_ASSETS.find((a) => a.symbol === symbol.toUpperCase());
   if (!asset) throw new Error(`Unknown token ${symbol}`);
+  return researchCoin(asset);
+}
+
+/** RSI and momentum research for any coin CoinGecko lists, by its CoinGecko id. Two price-history calls, cached. */
+export async function researchCoin(asset: { id: string; symbol: string; name: string }): Promise<TokenResearch> {
   const [hourly, daily] = await Promise.all([getHourly(asset.id), getDaily(asset.id)]);
 
   const h1 = resample(hourly, HOUR);
@@ -90,6 +96,21 @@ export async function researchToken(symbol: string): Promise<TokenResearch> {
     summary: summarize(rsis),
     updatedAt: Math.max(hourly[hourly.length - 1].t, Date.now() - 15 * 60_000),
   };
+}
+
+/** RSI for a set of tradable symbols, sequentially (the price-history provider is rate limited). Failures are skipped. */
+export async function researchSymbols(symbols: string[], max = 8): Promise<TokenResearch[]> {
+  const out: TokenResearch[] = [];
+  for (const sym of [...new Set(symbols.map((x) => x.toUpperCase()))].slice(0, max)) {
+    const t = tokenBySymbol(sym);
+    if (!t) continue;
+    try {
+      out.push(await researchCoin({ id: t.cgId, symbol: t.symbol, name: t.name }));
+    } catch {
+      /* skip: the strategy treats a missing reading as no signal */
+    }
+  }
+  return out;
 }
 
 /** All research tokens, sequentially so the price history provider is not rate limited. Failures are reported per token. */

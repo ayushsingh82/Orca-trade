@@ -17,11 +17,12 @@ const SECTIONS: { label: string; items: { href: string; label: string; tag: stri
   {
     label: "Signals",
     items: [
-      { href: "/news", label: "News Impact", tag: "10" },
-      { href: "/sectors", label: "Sectors", tag: "11" },
-      { href: "/flow", label: "Order Flow", tag: "12" },
-      { href: "/indices", label: "Index & ETF", tag: "13" },
-      { href: "/research", label: "RSI Research", tag: "14" },
+      { href: "/markets", label: "Markets", tag: "10" },
+      { href: "/news", label: "News Impact", tag: "11" },
+      { href: "/sectors", label: "Sectors", tag: "12" },
+      { href: "/flow", label: "Order Flow", tag: "13" },
+      { href: "/indices", label: "Index & ETF", tag: "14" },
+      { href: "/research", label: "RSI Research", tag: "15" },
     ],
   },
   {

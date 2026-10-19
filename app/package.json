@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/risk/*.test.ts src/lib/agents/*.test.ts src/lib/exec/*.test.ts src/lib/*.test.ts src/lib/billing/*.test.ts src/lib/research/*.test.ts src/lib/portfolio/*.test.ts",
+    "test": "tsx --test src/lib/risk/*.test.ts src/lib/agents/*.test.ts src/lib/exec/*.test.ts src/lib/*.test.ts src/lib/billing/*.test.ts src/lib/research/*.test.ts src/lib/portfolio/*.test.ts src/lib/tokens/*.test.ts",
     "test:db": "tsx --test src/lib/db.integration.test.ts"
   },
   "dependencies": {
