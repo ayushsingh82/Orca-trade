@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/brand";
 import { ErrorCard } from "@/components/error-card";
 import { PRIVY_APP_ID } from "@/components/privy-provider";
 import { PrivyLogin } from "@/components/privy-login";
+import { SIGNUP_OPEN } from "@/components/beta-link";
 
 type SolanaProvider = {
   connect: () => Promise<{ publicKey: { toString(): string } }>;
@@ -75,6 +76,13 @@ export default function LoginPage() {
         <h1 className="font-display text-3xl font-semibold tracking-tight">
           {mode === "login" ? "Sign in" : "Create account"}
         </h1>
+        {!SIGNUP_OPEN && (
+          <div className="rounded-lg border border-amber-400/40 bg-amber-400/5 p-4 text-sm">
+            <p className="font-medium text-amber-300">Beta access coming soon</p>
+            <p className="mt-1 text-muted-foreground">Sign-in and wallet creation are closed while we finish the beta.</p>
+          </div>
+        )}
+        <fieldset disabled={!SIGNUP_OPEN} className="min-w-0 space-y-6 border-0 p-0 disabled:pointer-events-none disabled:opacity-50">
         {PRIVY_APP_ID && (
           <>
             <PrivyLogin refCode={typeof window === "undefined" ? undefined : refCode()} />
@@ -124,6 +132,7 @@ export default function LoginPage() {
         >
           {mode === "login" ? "No account? Create one" : "Have an account? Sign in"}
         </button>
+        </fieldset>
         {error && <ErrorCard title="Could not sign in" message={error} />}
       </div>
     </div>

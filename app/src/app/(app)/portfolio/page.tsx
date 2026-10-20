@@ -16,6 +16,7 @@ import { fmtAgo, fmtPct, fmtPrice, tone } from "@/lib/format";
 import { allocation, analyzeFills, type PortfolioStats } from "@/lib/portfolio/analytics";
 import { buildSignals } from "@/lib/signals";
 import { cn } from "@/lib/utils";
+import { BetaLink } from "@/components/beta-link";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -36,9 +37,9 @@ export default async function PortfolioPage() {
     return (
       <>
         <PageHeader title="Portfolio" description="Sign in to see your agents' positions and PnL." />
-        <Link href="/login" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
+        <BetaLink className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
           Sign in
-        </Link>
+        </BetaLink>
       </>
     );
   }

@@ -6,10 +6,13 @@ import { hashPassword } from "@/lib/auth/password";
 import { resolveReferrer } from "@/lib/auth/referral";
 import { startSession } from "@/lib/auth/session";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { signupClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = signupClosedResponse();
+  if (closed) return closed;
   const limit = rateLimit(`signup:${clientIp(req)}`, 10, 60 * 60_000);
   if (!limit.allowed) {
     return NextResponse.json({ ok: false, error: "Too many sign-ups from this address. Try again later." }, { status: 429, headers: { "retry-after": String(limit.retryAfterSec) } });

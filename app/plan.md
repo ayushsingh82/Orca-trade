@@ -33,7 +33,7 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 | --- | --- |
 | M0 Scaffold + BestUI theme | Done |
 | M1 Intelligence layer | **Nearly done** — real data only (no mock), shared rate limiter, `OrcaSignal` + `/api/signals`, Opportunities, signal detail, Ask Orca, source badge. Anthropic provider added; Ask Orca just needs an LLM key |
-| M0.5 Accounts | **Code complete** — Solana wallet sign-in, email/password, Neon + Drizzle schema/migration, `consume()` daily limits on Ask. Needs `DATABASE_URL` + `AUTH_SECRET` to run end to end |
+| M0.5 Accounts | **Code complete (sign-in gated, see BETA_GATE.md)** — Solana wallet sign-in, email/password, Neon + Drizzle schema/migration, `consume()` daily limits on Ask. Needs `DATABASE_URL` + `AUTH_SECRET` to run end to end |
 | M2 Agents | **Built** — `agents`/`decisions` schema, momentum + narrative-rotation strategies, runner, Decision log UI. Paper PnL not built (execution is quote+simulate by default) |
 | M3 Risk Engine + policy | **Done** — pure `evaluate()`, `parseProposal()`, policy validation with hard ceilings, global + per-agent kill switch, 24 passing tests |
 | M4 Solana execution | **Built** — wallet detection + fund flow, per-agent encrypted signer, Jupiter quote/swap, simulate-then-send, human approval with Risk Engine re-check. Sending is OFF unless `EXECUTION_ENABLED=1` |

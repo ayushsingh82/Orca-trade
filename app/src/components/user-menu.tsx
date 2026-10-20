@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { BetaLink } from "@/components/beta-link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { usePrivyLogout } from "@/components/privy-provider";
@@ -22,12 +22,9 @@ export function UserMenu() {
   if (me === undefined) return null;
   if (!me) {
     return (
-      <Link
-        href="/login"
-        className="rounded-lg bg-accent px-3 py-2 text-center text-sm font-medium text-accent-foreground hover:opacity-90"
-      >
+      <BetaLink className="rounded-lg bg-accent px-3 py-2 text-center text-sm font-medium text-accent-foreground hover:opacity-90">
         Sign in
-      </Link>
+      </BetaLink>
     );
   }
   const label = me.email ?? `${me.wallet?.slice(0, 4)}…${me.wallet?.slice(-4)}`;

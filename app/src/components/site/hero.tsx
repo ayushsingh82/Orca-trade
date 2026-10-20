@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, Coins, Lock, ShieldCheck, Wallet } from "lucide-react";
 import { TRADABLE } from "@/lib/exec/mints";
 import { cn } from "@/lib/utils";
+import { BetaLink } from "@/components/beta-link";
 
 const card = "rounded-2xl border bg-card p-4 shadow-[0_24px_60px_-15px] shadow-black/50 ring-1 ring-white/10";
 
@@ -20,7 +21,6 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="bg-grid pointer-events-none absolute inset-0 -z-10 opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
-      <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-80 w-[44rem] -translate-x-1/2 rounded-full bg-accent/20 blur-[120px]" aria-hidden />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <Float className="left-[3%] top-[22%] -rotate-[6deg]" duration={7}>
           <div className={cn(card, "w-56")}>
@@ -54,7 +54,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-4 pb-28 pt-24 text-center sm:px-6 sm:pt-32 sm:pb-40">
         <span className="inline-flex items-center gap-2 rounded-full border bg-muted px-3 py-1 text-xs text-muted-foreground">
           <span className="size-1.5 rounded-full bg-accent" />
-          Live on Solana · real data only
+          Beta · live on Solana · real data only
         </span>
         <h1 className="mx-auto mt-6 max-w-4xl font-display text-4xl font-semibold tracking-tight sm:text-6xl">
           Research any token. Let AI agents trade it inside your limits.
@@ -63,9 +63,9 @@ export function Hero() {
           Orca tracks the top 50 and the Solana ecosystem, explains every move with cited evidence and RSI, and runs agents that trade on Solana only within the caps you set.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link href="/login" className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90">
+          <BetaLink className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90">
             Get started free <ArrowRight className="size-4" />
-          </Link>
+          </BetaLink>
           <Link href="/markets" className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted">
             Explore markets
           </Link>

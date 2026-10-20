@@ -10,6 +10,7 @@ import { SourceBadge } from "@/components/source-badge";
 import { getUser } from "@/lib/auth/session";
 import { getMarketsByIds, getSolanaMarkets, getTopMarkets } from "@/lib/tokens/markets";
 import { cn } from "@/lib/utils";
+import { BetaLink } from "@/components/beta-link";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -49,7 +50,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
       </div>
       {tab === "watchlist" && !user ? (
         <p className="text-sm text-muted-foreground">
-          <Link href="/login" className="text-accent underline">Sign in</Link> to follow tokens.
+          <BetaLink className="text-accent underline">Sign in</BetaLink> to follow tokens.
         </p>
       ) : tab === "watchlist" && followed.length === 0 ? (
         <p className="text-sm text-muted-foreground">You are not following any tokens yet. Press the star next to a token, or search for one above.</p>

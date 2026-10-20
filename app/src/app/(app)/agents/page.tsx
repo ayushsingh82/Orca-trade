@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, decisions } from "@/db/schema";
@@ -17,6 +16,7 @@ import { PageHeader } from "@/components/page-header";
 import { getUser } from "@/lib/auth/session";
 import { EXECUTION_ENABLED } from "@/lib/exec/config";
 import { cn } from "@/lib/utils";
+import { BetaLink } from "@/components/beta-link";
 
 export const dynamic = "force-dynamic";
 
@@ -36,9 +36,9 @@ export default async function AgentsPage() {
     return (
       <>
         <PageHeader title="Agents" description="Sign in to create and run agents." />
-        <Link href="/login" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
+        <BetaLink className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
           Sign in
-        </Link>
+        </BetaLink>
       </>
     );
   }

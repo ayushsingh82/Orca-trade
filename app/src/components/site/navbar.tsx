@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand";
+import { BetaLink } from "@/components/beta-link";
 
 const LINKS = [
-  { href: "/markets", label: "Markets" },
   { href: "/#how", label: "How it works" },
   { href: "/#features", label: "Research" },
   { href: "/#agents", label: "Agents" },
@@ -25,9 +25,9 @@ export function Navbar() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <BetaLink className="rounded-lg border px-3.5 py-2 text-sm font-medium">
             Login
-          </Link>
+          </BetaLink>
           <Link href="/dashboard" className="rounded-lg bg-foreground px-3.5 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90">
             Open app
           </Link>

@@ -2,8 +2,10 @@ import Link from "next/link";
 import {
   ArrowDownToLine, BarChart3, Bot, Brain, Check, Coins, FileSearch, Gauge, Layers, Newspaper, Rocket, Scale, Search, ShieldCheck, Star, TrendingUp, Wallet,
 } from "lucide-react";
+import { billingOpen } from "@/lib/billing/flags";
 import { AGENT_LIMITS, LIMITS } from "@/lib/entitlements";
 import { TRADABLE } from "@/lib/exec/mints";
+import { BetaLink } from "@/components/beta-link";
 
 const section = "mx-auto max-w-6xl px-4 py-20 sm:px-6";
 
@@ -192,16 +194,27 @@ const PLANS = [
 ] as const;
 
 export function Pricing() {
+  const open = billingOpen();
   return (
     <section id="pricing" className={section}>
-      <Heading eyebrow="Pricing" title="Start free, pay when you go live" body="Orca takes no cut of your trades and no performance fee." />
+      <Heading
+        eyebrow="Pricing"
+        title={open ? "Start free, pay when you go live" : "Free today. Paid plans open with the beta."}
+        body="Orca takes no cut of your trades and no performance fee."
+      />
       <div className="grid gap-4 md:grid-cols-3">
         {PLANS.map((p) => {
           const ask = LIMITS[p.id].ask;
+          const upcoming = !open && p.id !== "free";
           return (
-            <div key={p.id} className={`rounded-xl border bg-card p-6 ${p.id === "pro" ? "border-accent" : ""}`}>
+            <div key={p.id} className={`relative rounded-xl border bg-card p-6 ${p.id === "pro" ? "border-accent" : ""}`}>
+              <span
+                className={`absolute right-4 top-4 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${upcoming ? "border-amber-400/40 text-amber-300" : "border-emerald-400/40 text-emerald-300"}`}
+              >
+                {upcoming ? "Upcoming · Beta" : "Available now"}
+              </span>
               <h3 className="font-display text-xl font-semibold">{p.name}</h3>
-              <p className="mt-1 text-3xl font-semibold">{p.price}</p>
+              <p className="mt-1 text-3xl font-semibold">{upcoming ? "Coming soon" : p.price}</p>
               <p className="mt-1 text-sm text-muted-foreground">{p.blurb}</p>
               <ul className="mt-4 space-y-1.5 text-sm">
                 <li>{ask === null ? "Unlimited" : ask} Ask Orca per day</li>
@@ -209,9 +222,15 @@ export function Pricing() {
                 <li>Top 50, Solana and token search</li>
                 <li>RSI on four timeframes</li>
               </ul>
-              <Link href="/login" className="mt-5 block rounded-lg border px-4 py-2 text-center text-sm font-medium transition-colors hover:bg-muted">
-                {p.id === "free" ? "Get started" : `Choose ${p.name}`}
-              </Link>
+              {upcoming ? (
+                <span aria-disabled="true" className="mt-5 block cursor-not-allowed rounded-lg border px-4 py-2 text-center text-sm font-medium opacity-60">
+                  Coming soon
+                </span>
+              ) : (
+                <BetaLink className="mt-5 block rounded-lg border px-4 py-2 text-center text-sm font-medium transition-colors hover:bg-muted">
+                  {p.id === "free" ? "Get started" : `Choose ${p.name}`}
+                </BetaLink>
+              )}
             </div>
           );
         })}
@@ -226,7 +245,7 @@ const FAQ = [
   ["Can the AI trade on its own?", "Only in autonomous mode, only inside your limits, and only after the Risk Engine approves. Observe and propose modes never trade without you."],
   ["Is the data real?", "Yes. Orca reads live market, news and on-chain quote data. If a source is unavailable you see an error, not a made-up number."],
   ["Do the signals make money?", "Not proven. Our own backtest found nothing statistically significant, so conviction is a ranking, not a probability. Use paper trading to test."],
-  ["How do I pay?", "Card subscriptions, or USDC on Solana."],
+  ["Is Orca free?", "Yes, the Free plan is open now: markets, research, sentiment, paper trading and observe-only agents. Pro and Teams are upcoming with the beta."],
 ];
 
 export function Faq() {
@@ -235,9 +254,15 @@ export function Faq() {
       <Heading eyebrow="FAQ" title="Questions" />
       <div className="space-y-3">
         {FAQ.map(([q, a]) => (
-          <details key={q} className="group rounded-xl border bg-card p-4">
-            <summary className="cursor-pointer list-none text-sm font-medium">{q}</summary>
-            <p className="mt-2 text-sm text-muted-foreground">{a}</p>
+          <details key={q} className="group rounded-xl border bg-card transition-colors open:border-white/20 hover:border-white/15">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-medium [&::-webkit-details-marker]:hidden">
+              {q}
+              <span aria-hidden className="relative size-7 shrink-0 rounded-full border transition-colors group-open:bg-muted">
+                <span className="absolute left-1/2 top-1/2 h-px w-3 -translate-x-1/2 -translate-y-1/2 bg-foreground transition-transform duration-200 group-open:rotate-45" />
+                <span className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground transition-transform duration-200 group-open:rotate-45" />
+              </span>
+            </summary>
+            <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{a}</p>
           </details>
         ))}
       </div>
@@ -248,14 +273,15 @@ export function Faq() {
 export function Cta() {
   return (
     <section className={`${section} text-center`}>
-      <div className="relative overflow-hidden rounded-2xl border bg-card px-6 py-14">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-48 w-96 -translate-x-1/2 rounded-full bg-accent/20 blur-[90px]" aria-hidden />
-        <h2 className="relative font-display text-3xl font-semibold tracking-tight sm:text-4xl">Start with paper trading. It takes a minute.</h2>
-        <p className="relative mx-auto mt-3 max-w-md text-muted-foreground">Get a wallet, add a starter agent, and watch it work on live data. No funds at risk.</p>
+      <div className="relative overflow-hidden rounded-2xl border bg-card px-6 py-16 sm:py-20">
+        <div className="bg-grid pointer-events-none absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" aria-hidden />
+        <p className="relative font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">Paper trading · no funds at risk</p>
+        <h2 className="relative mx-auto mt-4 max-w-2xl font-display text-3xl font-semibold tracking-tight sm:text-5xl">Start with paper trading. It takes a minute.</h2>
+        <p className="relative mx-auto mt-4 max-w-md text-muted-foreground">Get a wallet, add a starter agent, and watch it work on live data. No funds at risk.</p>
         <div className="relative mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link href="/login" className="rounded-lg bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90">
+          <BetaLink className="rounded-lg bg-foreground px-6 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90">
             Create your account
-          </Link>
+          </BetaLink>
           <Link href="/markets" className="rounded-lg border px-6 py-3 text-sm font-medium transition-colors hover:bg-muted">
             Browse markets
           </Link>

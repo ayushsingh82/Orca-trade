@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { privyConfigured, upsertPrivyUser, verifyPrivyToken } from "@/lib/auth/privy";
 import { startSession } from "@/lib/auth/session";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { signupClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,8 @@ export const runtime = "nodejs";
  * sends about the user (email, wallet) is trusted, it is all read back from Privy.
  */
 export async function POST(req: NextRequest) {
+  const closed = signupClosedResponse();
+  if (closed) return closed;
   if (!privyConfigured()) return NextResponse.json({ ok: false, error: "Privy sign-in is not configured" }, { status: 503 });
   const limit = rateLimit(`privy:${clientIp(req)}`, 30, 10 * 60_000);
   if (!limit.allowed) {

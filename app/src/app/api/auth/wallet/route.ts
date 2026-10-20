@@ -5,10 +5,13 @@ import { users } from "@/db/schema";
 import { resolveReferrer } from "@/lib/auth/referral";
 import { startSession, verifyToken } from "@/lib/auth/session";
 import { signInMessage, verifyWalletSignature } from "@/lib/auth/solana";
+import { signupClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = signupClosedResponse();
+  if (closed) return closed;
   const { wallet, signature, challenge, ref } = (await req.json().catch(() => ({}))) as {
     ref?: string;
     wallet?: string;

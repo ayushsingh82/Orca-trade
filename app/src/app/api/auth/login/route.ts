@@ -5,10 +5,13 @@ import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { startSession } from "@/lib/auth/session";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { signupClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = signupClosedResponse();
+  if (closed) return closed;
   const { email, password } = (await req.json().catch(() => ({}))) as { email?: string; password?: string };
   // Slows password guessing: per address+email and per address overall.
   const ip = clientIp(req);

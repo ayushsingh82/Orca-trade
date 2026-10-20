@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { WalletActions } from "@/components/wallet-actions";
 import { getUser } from "@/lib/auth/session";
 import { readWalletBalances } from "@/lib/exec/wallet";
+import { BetaLink } from "@/components/beta-link";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Wallet" };
@@ -13,9 +13,9 @@ export default async function WalletPage() {
     return (
       <>
         <PageHeader title="Wallet" description="Sign in to see your wallet." />
-        <Link href="/login" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
+        <BetaLink className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
           Sign in
-        </Link>
+        </BetaLink>
       </>
     );
   }

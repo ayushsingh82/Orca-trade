@@ -67,13 +67,10 @@ export function Footer() {
           </nav>
         ))}
       </div>
-      <div className="border-t">
-        <div className="mx-auto max-w-6xl space-y-2 px-4 py-6 text-xs text-muted-foreground sm:px-6">
-          <p>
-            Not financial advice. Trading crypto is risky and you can lose money, including everything you put in. Past and paper results do not predict future results. Memecoins and small tokens are especially volatile.
-          </p>
-          <p>© {new Date().getFullYear()} Orca. All rights reserved.</p>
-        </div>
+      <div aria-hidden className="mx-auto max-w-6xl select-none overflow-hidden px-4 sm:px-6">
+        <p className="-mb-[0.18em] text-center font-display text-[clamp(7rem,30vw,26rem)] font-semibold leading-[0.8] tracking-tighter text-foreground/[0.07]">
+          Orca
+        </p>
       </div>
     </footer>
   );
