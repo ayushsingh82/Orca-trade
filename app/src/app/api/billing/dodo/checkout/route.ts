@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth/session";
 import { dodo, productFor } from "@/lib/billing/dodo";
+import { billingClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = billingClosedResponse();
+  if (closed) return closed;
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Sign in required" }, { status: 401 });
   const { plan } = (await req.json().catch(() => ({}))) as { plan?: string };

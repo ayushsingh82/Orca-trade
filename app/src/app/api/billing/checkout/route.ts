@@ -4,10 +4,13 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getUser } from "@/lib/auth/session";
 import { priceFor, stripe } from "@/lib/billing/stripe";
+import { billingClosedResponse } from "@/lib/billing/flags";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = billingClosedResponse();
+  if (closed) return closed;
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Sign in required" }, { status: 401 });
   const { plan } = (await req.json().catch(() => ({}))) as { plan?: string };

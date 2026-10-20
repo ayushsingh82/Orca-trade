@@ -133,6 +133,15 @@ export const watchlist = pgTable(
 );
 export type WatchlistItem = typeof watchlist.$inferSelect;
 
+/** People waiting for the paid plans to open. One row per email; asking again just updates the plan they want. */
+export const waitlist = pgTable("waitlist", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  plan: text("plan", { enum: ["pro", "teams"] }).notNull().default("pro"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type WaitlistEntry = typeof waitlist.$inferSelect;
+
 export type Agent = typeof agents.$inferSelect;
 export type Decision = typeof decisions.$inferSelect;
 

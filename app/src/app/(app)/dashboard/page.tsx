@@ -8,6 +8,8 @@ import { fmtAgo, fmtPct, fmtPrice, tone } from "@/lib/format";
 import { buildLiveNewsImpacts, detectContradictions } from "@/lib/intel/marketmind";
 import { getKlines, getSectorSpotlight } from "@/lib/intel/sosovalue";
 import { LineChart } from "@/components/line-chart";
+import { SentimentView } from "@/components/live/sentiment-view";
+import { getSentiment } from "@/lib/sentiment";
 import { buildSignals } from "@/lib/signals";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +32,7 @@ export default async function DashboardPage() {
   }
   const { signals, source } = data;
   // Same calls buildSignals already made, so these are cache hits; sectors is one extra request.
-  const [news, contra, sectors] = await Promise.allSettled([buildLiveNewsImpacts(10), detectContradictions(), getSectorSpotlight()]);
+  const [news, contra, sectors, sentiment] = await Promise.allSettled([buildLiveNewsImpacts(10), detectContradictions(), getSectorSpotlight(), getSentiment()]);
   const contradictions = contra.status === "fulfilled" ? contra.value.items : [];
   const headlines = news.status === "fulfilled" ? news.value.items.slice(0, 6) : [];
   const movers = sectors.status === "fulfilled" ? [...sectors.value.data].sort((a, b) => b.change24h - a.change24h) : [];
@@ -106,6 +108,11 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+      {sentiment.status === "fulfilled" && (
+        <Panel title="Market sentiment" subtitle="One reading from breadth, news, sectors and order flow" right={<Link href="/sentiment" className="text-xs text-accent underline">Details</Link>} className="mt-6">
+          <SentimentView s={sentiment.value} compact />
+        </Panel>
+      )}
       <Panel title="Cross-asset, last 30 days" subtitle="Daily closes rebased to 100 at the start" className="mt-6">
         <LineChart series={rebased} labels={["30d ago", "today"]} />
       </Panel>

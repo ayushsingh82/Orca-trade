@@ -11,7 +11,9 @@ const SECTIONS: { label: string; items: { href: string; label: string; tag: stri
     label: "Overview",
     items: [
       { href: "/dashboard", label: "Intelligence Board", tag: "00" },
-      { href: "/ask", label: "Ask Orca", tag: "01" },
+      { href: "/sentiment", label: "Market Sentiment", tag: "01" },
+      { href: "/bots", label: "Live Bots", tag: "02" },
+      { href: "/ask", label: "Ask Orca", tag: "03" },
     ],
   },
   {
