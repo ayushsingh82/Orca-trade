@@ -59,3 +59,9 @@ Orca is showing market and agent data only. Accounts, wallet creation and paid p
 
 ## Live section
 - `live-now.tsx`: sentiment + 3 bots now sit in a 2×2 grid (stacks on mobile). Navbar Login is a bordered button; `BetaLink` disabled state restyled with a pulsing amber 'Beta soon' pill.
+
+## App chrome
+- Sidebar: lucide icons per item, accent bar on the active route, Live data + Beta card, pill tabs on mobile.
+- Shared `PageHeader` / `Panel`: larger titles, divider, hover borders (applies to every app page). Dashboard opportunity cards lift on hover; direction is a pill.
+- Order Flow: search any ticker (`/flow?symbol=PEPE`); needs a USD market on Coinbase, otherwise a notice is shown.
+- RSI Research and Order Flow now use the same autocomplete (`TokenSearch target="research"|"flow"`). RSI: `/research/<coingecko-id>?s=SYM&n=Name` works for any listed coin (`researchCoin`). Order Flow: `/flow?symbol=SYM`, replaces the plain ticker box.

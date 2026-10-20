@@ -15,10 +15,10 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("rounded-xl border bg-card p-5", className)}>
-      <header className="mb-4 flex items-start justify-between gap-3">
+    <section className={cn("rounded-xl border bg-card p-5 transition-colors hover:border-white/15", className)}>
+      <header className="mb-4 flex items-start justify-between gap-3 border-b pb-3">
         <div>
-          <h2 className="font-display text-base font-semibold">{title}</h2>
+          <h2 className="font-display text-lg font-semibold">{title}</h2>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
         </div>
         {right}

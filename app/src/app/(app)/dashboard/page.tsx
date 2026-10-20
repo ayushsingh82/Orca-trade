@@ -71,16 +71,16 @@ export default async function DashboardPage() {
           { label: "Updated", value: fmtAgo(data.generatedAt), hint: "cached up to a few minutes" },
         ]}
       />
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-lg font-semibold">Opportunities</h2>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h2 className="font-display text-xl font-semibold">Opportunities</h2>
         <Link href="/markets" className="text-xs text-accent underline">All markets →</Link>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {signals.slice(0, 12).map((s) => (
-          <Link key={s.id} href={`/signals/${s.asset}`} className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted">
+          <Link key={s.id} href={`/signals/${s.asset}`} className="group block rounded-xl border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-muted/50">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold">{s.asset}</h2>
-              <span className={cn("text-xs font-medium uppercase", DIRECTION_STYLE[s.direction])}>
+              <span className={cn("rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide", DIRECTION_STYLE[s.direction])}>
                 {s.direction}
               </span>
             </div>
