@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ErrorCard } from "@/components/error-card";
+import { TokenSearch } from "@/components/markets/token-search";
 import { PageHeader } from "@/components/page-header";
 import { SourceBadge } from "@/components/source-badge";
 import { RsiBadge, ZONE_LABEL, ZONE_STYLE } from "@/components/rsi";
@@ -25,6 +26,7 @@ export default async function ResearchPage() {
         description="Relative Strength Index across 1h, 4h, 24h and 7d. RSI measures momentum from 0 to 100: above 70 is overbought, below 30 is oversold."
       />
       <SourceBadge className="-mt-4 mb-6" />
+      <TokenSearch target="research" />
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="text-left font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">

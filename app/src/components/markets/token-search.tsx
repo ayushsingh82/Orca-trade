@@ -6,8 +6,15 @@ import { fmtPrice } from "@/lib/format";
 
 type Hit = { id: string; symbol: string; name: string; image: string | null; rank: number | null; price: number; change24h: number | null; tradable: boolean; risk: string | null };
 
+const hrefFor = (target: "markets" | "research" | "flow", h: Hit) =>
+  target === "flow"
+    ? `/flow?symbol=${encodeURIComponent(h.symbol.toUpperCase())}`
+    : target === "research"
+      ? `/research/${h.id}?s=${encodeURIComponent(h.symbol.toUpperCase())}&n=${encodeURIComponent(h.name)}`
+      : `/markets/${h.id}`;
+
 /** Search every coin CoinGecko lists. Debounced, with the latest request winning so slow responses cannot overwrite newer ones. */
-export function TokenSearch() {
+export function TokenSearch({ target = "markets" }: { target?: "markets" | "research" | "flow" }) {
   const [q, setQ] = useState("");
   const [result, setResult] = useState<{ term: string; hits: Hit[]; error: string | null }>({ term: "", hits: [], error: null });
   const seq = useRef(0);
@@ -52,7 +59,7 @@ export function TokenSearch() {
           <ul>
             {hits.map((h) => (
               <li key={h.id}>
-                <Link href={`/markets/${h.id}`} onClick={() => setQ("")} className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted">
+                <Link href={hrefFor(target, h)} onClick={() => setQ("")} className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {h.image ? <img src={h.image} alt="" width={20} height={20} className="size-5 rounded-full" /> : <span className="size-5 rounded-full bg-muted" />}
                   <span className="font-medium">{h.symbol}</span>

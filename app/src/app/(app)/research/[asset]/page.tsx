@@ -8,7 +8,7 @@ import { Panel } from "@/components/panel";
 import { ZONE_LABEL, RsiBadge, RsiGauge } from "@/components/rsi";
 import { SourceBadge } from "@/components/source-badge";
 import { fmtPct, tone } from "@/lib/format";
-import { researchToken, TIMEFRAMES } from "@/lib/research";
+import { researchCoin, researchToken, TIMEFRAMES } from "@/lib/research";
 import { RESEARCH_ASSETS } from "@/lib/research/prices";
 
 export const maxDuration = 60;
@@ -21,14 +21,18 @@ const TF_NOTE = {
   "7d": "Weekly momentum. Slow; shows the larger trend.",
 } as const;
 
-export default async function ResearchAssetPage({ params }: PageProps<"/research/[asset]">) {
+export default async function ResearchAssetPage({ params, searchParams }: PageProps<"/research/[asset]">) {
   const { asset } = await params;
-  const symbol = asset.toUpperCase();
-  if (!RESEARCH_ASSETS.some((a) => a.symbol === symbol)) notFound();
+  const sp = await searchParams;
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.slice(0, 80);
+  const known = RESEARCH_ASSETS.find((a) => a.symbol === asset.toUpperCase());
+  // Any other coin is addressed by its CoinGecko id (from the search box), with its symbol and name in the query.
+  if (!known && !/^[a-z0-9-]{1,80}$/.test(asset)) notFound();
+  const symbol = known ? known.symbol : (one(sp.s) ?? asset).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || asset.toUpperCase();
 
   let t;
   try {
-    t = await researchToken(symbol);
+    t = known ? await researchToken(symbol) : await researchCoin({ id: asset, symbol, name: one(sp.n) ?? symbol });
   } catch (e) {
     return <ErrorCard title={`Could not load ${symbol}`} message={e instanceof Error ? e.message : "failed"} />;
   }
