@@ -10,6 +10,16 @@ Orca finds an opportunity, explains *why* with cited evidence, and, if you allow
 
 ---
 
+## Watch the intro (2 min, with voice)
+
+[![Orca intro video: click to watch](docs/video/orca-intro-poster.jpg)](docs/video/orca-intro.mp4)
+
+**[▶ Watch](docs/video/orca-intro.mp4)** · **[⬇ Download the video (MP4, 12 MB)](https://github.com/ayushsingh82/lev-trade/raw/main/docs/video/orca-intro.mp4)**
+
+What is live today: market sentiment, the Intelligence Board, markets, RSI research, news impact and order flow, plus three bots watching live data. Coming in the beta: sign-in with a wallet, paper-trading agents, and live agents inside your limits.
+
+---
+
 ## The problem
 
 - **Research tools stop at insight.** You get charts and headlines, then switch to another app to act, after the move has decayed.
