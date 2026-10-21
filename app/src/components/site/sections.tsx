@@ -5,7 +5,7 @@ import {
 import { billingOpen } from "@/lib/billing/flags";
 import { AGENT_LIMITS, LIMITS } from "@/lib/entitlements";
 import { TRADABLE } from "@/lib/exec/mints";
-import { BetaLink } from "@/components/beta-link";
+import { BetaLink, SIGNUP_OPEN } from "@/components/beta-link";
 
 const section = "mx-auto max-w-6xl px-4 py-20 sm:px-6";
 
@@ -209,9 +209,9 @@ export function Pricing() {
           return (
             <div key={p.id} className={`relative rounded-xl border bg-card p-6 ${p.id === "pro" ? "border-accent" : ""}`}>
               <span
-                className={`absolute right-4 top-4 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${upcoming ? "border-amber-400/40 text-amber-300" : "border-emerald-400/40 text-emerald-300"}`}
+                className={`absolute right-4 top-4 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${upcoming || !SIGNUP_OPEN ? "border-amber-400/40 text-amber-300" : "border-emerald-400/40 text-emerald-300"}`}
               >
-                {upcoming ? "Upcoming · Beta" : "Available now"}
+                {upcoming ? "Upcoming · Beta" : SIGNUP_OPEN ? "Available now" : "Opens with the beta"}
               </span>
               <h3 className="font-display text-xl font-semibold">{p.name}</h3>
               <p className="mt-1 text-3xl font-semibold">{upcoming ? "Coming soon" : p.price}</p>

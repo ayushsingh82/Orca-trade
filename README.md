@@ -146,6 +146,9 @@ Jupiter ───┘   (OrcaSignal)     (strategies)       └─► Risk Engine
 | M6 Hardening: price guard against an independent reference, 429 retry, priority fee option, mainnet pilot cap | Built: price guard (live-tested), Jito bundle sending (tx build verified against Jupiter and Jito; sending untested). CoinGecko is the second price source instead of Pyth |
 | M7 Billing: Stripe checkout, portal, webhook, billing page | Built; Stripe needs keys and prices; USDC payments verified on-chain (logic tested, never run live) |
 | M8 Growth: referral links, shareable Decision Records (the public leaderboard is switched off for the MVP) | Built; referral rewards (30 days of Pro per paying referral, max 12) need the database to run |
+| M9 Beta gate and live widgets | Done; sign-in is closed until `NEXT_PUBLIC_SIGNUP_ENABLED=1` |
+
+Everything above has code. What is left (keys, database, first real runs, a few gaps) is listed with owners in [`app/plan.md`](app/plan.md#remaining-work).
 
 ## What you need
 

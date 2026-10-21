@@ -41,12 +41,53 @@ Files ported live in `src/lib/intel/`: `analytics, llm, marketmind, mock, sodex,
 | M6 Hardening | **Partly built** — `assertQuoteSane` price guard (tested, live-checked against Jupiter), 429 retry, priority-fee option, `PILOT_MAX_TRADE_USD` cap. Pyth Hermes now returns 401 without credentials, so the reference price is SoSoValue (independent of the DEX). Jito/MEV bundles not done |
 | M7 Billing | **Built** — Stripe subscription checkout, billing portal, signature-verified webhook mapping prices to plans. Untested without Stripe keys. USDC payment not built |
 | M8 Growth | **Built** — referral codes, opt-in `/leaderboard` (paper agents), opt-in shareable `/d/[id]` Decision Records. No referral rewards |
+| M9 Beta gate and live widgets | **Done** — sign-in closed (banner + API guard), pricing hidden, live sentiment and bots on the landing page, token search on Markets, RSI Research and Order Flow. See `BETA_GATE.md` |
 
-## Next steps (in order)
-1. Finish M1: port `/ask` (route + page) as Ask Orca; signal detail page with citations and contradictions; show `source` badge.
-2. M0.5: auth (wallet SIWE + email), Postgres + Drizzle, free-tier limits and usage counters.
-3. M2: `agent`/`policy`/`decision` schema, strategy templates, runtime loop in observe mode, Decision log UI, paper PnL.
-4. M3: Risk Engine as pure functions with exhaustive unit tests before any wallet code.
+## Remaining work
+
+Code exists for every milestone above (144 unit tests pass, `tsc` and `eslint` clean). What is left is turning it on, proving the parts that have never run for real, and a few product gaps. **You** = needs your account, key or decision; **Code** = engineering.
+
+### 1. To launch the beta (blockers)
+| # | Item | Who | Notes |
+| --- | --- | --- | --- |
+| 1 | Set Vercel env vars: `SOSO_API_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `COINGECKO_API_KEY`, `AUTH_SECRET`, `AGENT_KEY_SECRET`, `CRON_SECRET`, Privy keys | You | Without `SOSO_API_KEY`, Intelligence Board, News, Sectors, Index & ETF, sentiment and bots fail on the deployed site. Redeploy after setting. |
+| 2 | Create a Neon database, set `DATABASE_URL`, run the Drizzle migrations (latest is `0011`) | You | Accounts, agents, decisions, paper PnL, referrals and the waitlist table all need it. |
+| 3 | Add an LLM key (`ANTHROPIC_API_KEY`, or `OPENAI_*`) | You | Ask Orca only. Everything else works without it. |
+| 4 | Turn sign-in on: `NEXT_PUBLIC_SIGNUP_ENABLED=1` | You | Closed today, see `BETA_GATE.md`. Do this only after items 1 and 2. |
+| 5 | ~~Fix the Free plan card~~ | Code | **Done.** Badge now reads "Opens with the beta" while sign-in is closed. |
+| 6 | Put the risk disclaimer back somewhere visible (it was removed from the footer) | Code + You | Keep a "not financial advice" line on the landing page and the Risk page. Your call on wording. |
+| 7 | Rotate the SoSoValue key that was committed in MarketMind's public repo | You | Listed under Known issues since M1. |
+
+### 2. Built but never run for real
+| # | Item | How to prove it |
+| --- | --- | --- |
+| 8 | Live swaps (`EXECUTION_ENABLED=1`) | Mainnet pilot with `PILOT_MAX_TRADE_USD=10`, one funded agent, watch the Decision log. |
+| 9 | Jito bundle sending | Tx build is verified; sending is not. Send one tipped bundle and confirm it lands. |
+| 10 | USDC subscription payments | Logic is tested; pay once from a real wallet to `TREASURY_WALLET` and confirm the plan upgrades and lapses. |
+| 11 | Stripe checkout, portal and webhook | Needs keys and the Pro and Teams prices. Use test mode and the Stripe CLI to replay webhooks. Dodo Payments checkout is also built and equally untested. |
+| 12 | Scheduler | Needs `CRON_SECRET` on Vercel. The Hobby plan runs it once a day; hourly needs Pro. |
+| 13 | Telegram alerts | Needs `TELEGRAM_BOT_TOKEN`; send a test alert. |
+| 14 | Referral rewards (30 days Pro per paying referral, max 12) | Needs the database, then one referred signup that pays. |
+| 15 | Privy sign-in with embedded wallets | Needs the Privy app configured with Solana and your site origin. |
+
+### 3. Not built yet
+| # | Item | Notes |
+| --- | --- | --- |
+| 16 | Squads on-chain spending limits | Builders and design exist (`docs/ONCHAIN_LIMITS.md`) but are not wired or run. Today the agent signer plus Risk Engine enforce caps off-chain. |
+| 17 | Shared cache for SoSoValue data | **Code done, needs your Upstash keys.** `src/lib/shared-cache.ts` is a second cache tier (`UPSTASH_REDIS_REST_URL` / `_TOKEN`); unset = in-memory only. Cold pages used to wait up to a minute behind the 8 calls/min limiter (measured: Intelligence Board 52 s cold). Now a page waits at most 40 s then shows a clear error, and `/api/cron/warm` fills the cache ahead of visitors (daily in `vercel.json`; ping it every ~5 min from an external cron for freshness). |
+| 18 | Better signals | The backtest found no proven edge (see Update above). Treat output as a ranking, not a prediction, until a longer backtest shows otherwise. |
+| 19 | MEV protection beyond Jito tips | Not started. |
+| 20 | Public leaderboard | Switched off for the MVP; re-enable together with `app/leaderboard/page.tsx`. |
+| 21 | Contradiction-to-asset matching | Still a symbol text match; needs structured asset tags. |
+| 22 | Waitlist | UI removed; `/api/waitlist`, `lib/waitlist.ts` and the table remain. Delete them or bring the form back with the beta. |
+| 23 | End-to-end tests | Partly done: `npm run smoke` (`scripts/smoke.ts`) checks the public pages, token search, Order Flow search and that sign-in is refused while the gate is closed. A browser-level Playwright test is still open. |
+
+### 4. Suggested order
+1. Items 1, 5, 6: a working, honest public site (no database needed).
+2. Items 2, 3, 4, 15: accounts and paper trading, with the beta open.
+3. Items 12, 13, 14, 17: scheduler, alerts, referrals and a stable data cache.
+4. Items 11, 10: paid plans.
+5. Items 8, 9, 16, 19: live trading, last and smallest first.
 
 ## Known issues / notes
 - Signal scoring in `src/lib/signals.ts` is a simple momentum + news-bias blend; a heuristic, to be refined and backtested before agents trade on it.

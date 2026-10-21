@@ -11,6 +11,9 @@
 // gets masked. Klines above 1d require a whitelisted key on this plan, so
 // getKlines throws WITHOUT spending a call.
 
+import { AsyncLocalStorage } from "node:async_hooks";
+import { sharedGet, sharedSet } from "@/lib/shared-cache";
+
 const SOSO_BASE_URL = "https://openapi.sosovalue.com/openapi/v1";
 const SOSO_API_KEY = process.env.SOSO_API_KEY ?? "";
 
@@ -104,7 +107,14 @@ const MAX_CALLS_PER_WINDOW = 8; // Demo plan allows 10/min; keep headroom
 
 // Sliding-window limiter: wait for a free slot instead of firing a call that
 // would be rejected. Real data arrives slower on a cold start, never fabricated.
+// A page request only waits PAGE_PATIENCE_MS: past that it fails with a clear message instead of hanging until the
+// platform kills it. The cache-warming cron runs under `withSosoPatience` with a much longer budget.
+const PAGE_PATIENCE_MS = 40_000;
+const patience = new AsyncLocalStorage<number>();
+export const withSosoPatience = <T>(ms: number, fn: () => Promise<T>): Promise<T> => patience.run(ms, fn);
+
 async function acquireSlot(): Promise<void> {
+  const deadline = Date.now() + (patience.getStore() ?? PAGE_PATIENCE_MS);
   for (;;) {
     const now = Date.now();
     state.calls = state.calls.filter((t) => now - t < WINDOW_MS);
@@ -112,7 +122,9 @@ async function acquireSlot(): Promise<void> {
       state.calls.push(now);
       return;
     }
-    await new Promise((r) => setTimeout(r, state.calls[0] + WINDOW_MS - now + 50));
+    const wait = state.calls[0] + WINDOW_MS - now + 50;
+    if (now + wait > deadline) throw new Error("SoSoValue is rate limited right now. Try again in a minute.");
+    await new Promise((r) => setTimeout(r, wait));
   }
 }
 
@@ -125,6 +137,13 @@ async function cachedGet<T>(path: string, ttlMs = DEFAULT_TTL_MS): Promise<T> {
   if (pending) return pending as Promise<T>;
 
   const request = (async () => {
+    // Another server instance may already have paid for this call; reuse it before spending our own rate limit.
+    const shared = await sharedGet<T>(path);
+    if (shared && Date.now() - shared.at < ttlMs) {
+      state.cache.set(path, { at: shared.at, data: shared.data });
+      state.inflight.delete(path);
+      return shared.data;
+    }
     try {
       await acquireSlot();
       const response = await fetch(`${SOSO_BASE_URL}${path}`, {
@@ -139,10 +158,12 @@ async function cachedGet<T>(path: string, ttlMs = DEFAULT_TTL_MS): Promise<T> {
       }
       const data = (body.data ?? body) as T;
       state.cache.set(path, { at: Date.now(), data });
+      void sharedSet(path, data, (ttlMs / 1000) * 10);
       return data;
     } catch (err) {
       // Serve the last real response (stale) rather than failing, if we have one.
       if (hit) return hit.data as T;
+      if (shared) return shared.data;
       throw err;
     } finally {
       state.inflight.delete(path);
