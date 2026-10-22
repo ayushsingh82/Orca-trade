@@ -16,6 +16,19 @@ Orca finds an opportunity, explains *why* with cited evidence, and, if you allow
 
 **[▶ Watch](docs/video/orca-intro.mp4)** · **[⬇ Download the video (MP4, 11 MB)](https://github.com/ayushsingh82/lev-trade/raw/main/docs/video/orca-intro.mp4)**
 
+### Pick a voice
+
+Same video, six different female voices (all macOS system voices). Click a name to watch.
+
+| Voice | Accent | Watch |
+|---|---|---|
+| Samantha | US | [▶ Watch](docs/video/voices/orca-intro-Samantha.mp4) |
+| Flo | US | [▶ Watch](docs/video/voices/orca-intro-Flo.mp4) |
+| Karen | Australian | [▶ Watch](docs/video/voices/orca-intro-Karen.mp4) |
+| Moira | Irish (the default above) | [▶ Watch](docs/video/voices/orca-intro-Moira.mp4) |
+| Tessa | South African | [▶ Watch](docs/video/voices/orca-intro-Tessa.mp4) |
+| Tara | Indian | [▶ Watch](docs/video/voices/orca-intro-Tara.mp4) |
+
 What is live today: market mood, the Intelligence Board, markets, momentum checks, news and order flow, plus three bots watching live data. Coming in the beta: sign-in with a wallet, practice trading with pretend money, and live agents that only trade inside your limits.
 
 ---
