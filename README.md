@@ -14,7 +14,7 @@ Orca finds an opportunity, explains *why* with cited evidence, and, if you allow
 
 [![Orca intro video: click to watch](docs/video/orca-intro-poster.jpg)](docs/video/orca-intro.mp4)
 
-**[▶ Watch](docs/video/orca-intro.mp4)** · **[⬇ Download the video (MP4, 11 MB)](https://github.com/ayushsingh82/lev-trade/raw/main/docs/video/orca-intro.mp4)**
+**[▶ Watch](docs/video/orca-intro.mp4)** · **[⬇ Download the video (MP4, 11 MB)](https://github.com/ayushsingh82/Orca-trade/raw/main/docs/video/orca-intro.mp4)**
 
 ### Pick a voice
 
